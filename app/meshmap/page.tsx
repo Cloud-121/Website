@@ -45,7 +45,8 @@ type NavbarProps = {
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Docs", href: "https://docs.gulfcoastmesh.org" },
-  { label: "Mesh Map's", href: "/meshmap" },
+  { label: "Mesh Maps", href: "/meshmap" },
+  { label: "Live Map", href: "https://analyzer.gulfcoastmesh.org/#/live", external: true },
   { label: "Discord", href: "https://discord.gulfcoastmesh.org", external: true },
   { label: "GitHub", href: "https://github.com/LouisianaMeshCommunity", external: true },
 ];
@@ -54,7 +55,7 @@ const Navbar = ({ theme, setTheme }: NavbarProps) => {
   const [navOpen, setNavOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-30 bg-gray-900 dark:bg-gray-900">
+    <nav className="fixed top-0 left-0 w-full z-30 bg-[#0b1120] border-b border-blue-900/30">
       <div className="max-w-6xl mx-auto flex justify-between items-center px-4 py-3">
         <Link
           href="/"
@@ -153,7 +154,7 @@ const Navbar = ({ theme, setTheme }: NavbarProps) => {
 
       {/* Mobile Dropdown */}
       {navOpen && (
-        <div className="md:hidden bg-black/70 text-white px-4 py-3 space-y-2 backdrop-blur-sm">
+        <div className="md:hidden bg-[#050B14]/95 border-b border-blue-900/30 text-white px-4 py-3 space-y-2 backdrop-blur-md">
           {navLinks.map(({ label, href, external }) =>
             external ? (
               <a
@@ -196,14 +197,14 @@ const Navbar = ({ theme, setTheme }: NavbarProps) => {
 // --- LINKS PAGE COMPONENT ---
 const LinksContent = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-100 to-blue-200 dark:from-gray-900 dark:to-gray-950 px-6 py-24 sm:py-32 transition-all duration-300">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#050B14] px-6 py-24 sm:py-32 transition-all duration-300">
       <div className="max-w-4xl w-full">
         {/* Main Content */}
         <header className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-800 dark:text-white mb-4 drop-shadow-lg">
-            Gulf Coast Mesh Map
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-4 drop-shadow-lg uppercase tracking-tight">
+            Gulf Coast <span className="text-[#10b981]">Mesh Map</span>
           </h1>
-          <p className="text-lg text-gray-700 dark:text-gray-300">
+          <p className="text-lg text-gray-300">
             A map powered by the Gulf Coast Mesh.
           </p>
         </header>
@@ -215,17 +216,16 @@ const LinksContent = () => {
             href="https://explorer.gulfcoastmesh.org/"
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-center justify-between p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 border-b-4 border-emerald-500 hover:border-emerald-400"
+            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-[#0f172a] rounded-2xl shadow-xl hover:shadow-[0_0_25px_rgba(16,185,129,0.15)] transition-all duration-300 transform hover:-translate-y-2 border-b-4 border-[#10b981] hover:border-[#34d399]"
           >
             {/* Left side: Title */}
-            <div className="flex items-center gap-4 text-left">
-              <div className="text-emerald-500 transition-transform duration-300 group-hover:scale-110"></div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <div className="flex items-center gap-4 text-left mb-2 sm:mb-0">
+              <h2 className="text-xl font-bold text-white uppercase tracking-wide">
                 Explorer
               </h2>
             </div>
             {/* Right side: Description */}
-            <div className="flex-1 ml-6 text-right text-gray-600 dark:text-gray-400">
+            <div className="sm:ml-6 text-left sm:text-right text-gray-300">
               Our Primary Meshcore Network, and map to view live trafic around Coast.
             </div>
           </a>
@@ -235,99 +235,99 @@ const LinksContent = () => {
             href="https://meshview.gulfcoastmesh.org/"
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex items-center justify-between p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 border-b-4 border-indigo-500 hover:border-indigo-400"
+            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-[#0f172a] rounded-2xl shadow-xl hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all duration-300 transform hover:-translate-y-2 border-b-4 border-blue-500 hover:border-blue-400"
           >
             {/* Left side: Title */}
-            <div className="flex items-center gap-4 text-left">
-              <div className="text-indigo-500 transition-transform duration-300 group-hover:scale-110"></div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <div className="flex items-center gap-4 text-left mb-2 sm:mb-0">
+              <h2 className="text-xl font-bold text-white uppercase tracking-wide">
                 Meshview
               </h2>
             </div>
             {/* Right side: Description */}
-            <div className="flex-1 ml-6 text-right text-gray-600 dark:text-gray-400">
+            <div className="sm:ml-6 text-left sm:text-right text-gray-300">
               Our Secondary Meshtastic Network Map, to view live trafic in local areas; primarily Louisiana.
             </div>
           </a>
         </div>
 
         {/* Divider */}
-        <div className="my-10 border-t border-gray-300 dark:border-gray-700"></div>
+        <div className="my-10 border-t border-white/5"></div>
 
         {/* How-to Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+        <div className="bg-[#0f172a] rounded-3xl shadow-2xl p-8 sm:p-12 border border-blue-500/20 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 bg-blue-500 h-full"></div>
+          <h2 className="text-2xl font-bold text-white mb-4 uppercase tracking-wide">
             How to Add Your Device to the Map via MQTT for Meshtastic
           </h2>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
+          <p className="text-gray-300 mb-6">
             If you&apos;re not nearby another node reporting to the map, you can have your device report itself to the map via MQTT.
           </p>
-          <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+          <ul className="list-disc list-inside space-y-3 text-gray-300">
             <li>Open the Meshtastic app or web client.</li>
-            <li className="font-bold">Module Configuration &gt; MQTT</li>
-            <ul className="list-disc list-inside ml-5">
+            <li className="font-bold text-white">Module Configuration &gt; MQTT</li>
+            <ul className="list-disc list-inside ml-5 space-y-2">
               <li>
                 MQTT Enabled:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   True
                 </code>
               </li>
               <li>
                 Encryption Enabled:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   True
                 </code>
               </li>
               <li>
                 JSON Enabled:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   False
                 </code>
               </li>
               <li>
                 Map Report Enabled:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   Optional
                 </code>
               </li>
               <li>
                 Root Topic:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   msh/US/LA
                 </code>
               </li>
               <li>
                 Server Address:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   mqtt.gulfcoastmesh.org
                 </code>
               </li>
               <li>
                 Username:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   uplink
                 </code>
               </li>
               <li>
                 Password:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   uplink
                 </code>
               </li>
               <li>
                 TLS Enabled:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   False
                 </code>
               </li>
             </ul>
-            <li className="font-bold">
+            <li className="font-bold text-white mt-4">
               Radio Configuration &gt; Channels &gt; 0 / Primary
             </li>
-            <ul className="list-disc list-inside ml-5">
+            <ul className="list-disc list-inside ml-5 mt-2">
               <li>
                 MQTT Uplink:{" "}
-                <code className="font-mono bg-gray-200 dark:bg-gray-700 p-1 rounded">
+                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
                   Enabled
                 </code>
               </li>

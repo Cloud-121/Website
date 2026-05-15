@@ -38,7 +38,8 @@ const useTheme = () => {
 const navLinks = [
   { label: "Home", href: "#home" },
   { label: "Docs", href: "https://docs.gulfcoastmesh.org" },
-  { label: "Mesh Map's", href: "/meshmap" },
+  { label: "Mesh Maps", href: "/meshmap" },
+  { label: "Live Map", href: "https://analyzer.gulfcoastmesh.org/#/live", external: true },
   { label: "Discord", href: "https://discord.gulfcoastmesh.org", external: true },
   { label: "GitHub", href: "https://github.com/LouisianaMeshCommunity", external: true },
 ];
@@ -53,7 +54,7 @@ const App = () => {
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 50) {
-        setNavBg("bg-gray-900");
+        setNavBg("bg-[#0b1120] shadow-lg");
       } else {
         setNavBg("bg-transparent");
       }
@@ -119,10 +120,10 @@ const App = () => {
       {showBanner && (
         <div className="fixed top-0 left-0 w-full z-50 bg-indigo-600 text-white px-4 py-2 text-center text-sm sm:text-base font-medium shadow-md flex items-center justify-center gap-2">
           <span className="flex items-center gap-2">
-            <span role="img" aria-label="loudspeaker"></span> 
+            <span role="img" aria-label="loudspeaker"></span>
             New Meshcore settings! Please{""}
-            <a 
-              href="https://docs.gulfcoastmesh.org/freq-settings/" 
+            <a
+              href="https://docs.gulfcoastmesh.org/freq-settings/"
               className="underline font-bold hover:text-indigo-100 transition"
               target="_blank"
               rel="noopener noreferrer"
@@ -131,7 +132,7 @@ const App = () => {
             </a>{" "}
             to ensure your repeater works correctly.
           </span>
-          <button 
+          <button
             onClick={() => setShowBanner(false)}
             className="ml-4 p-1 hover:bg-white/20 rounded-full transition shrink-0"
             aria-label="Dismiss banner"
@@ -207,7 +208,7 @@ const App = () => {
 
         {/* Mobile Dropdown */}
         {navOpen && (
-          <div className="md:hidden bg-black/70 text-white px-4 py-3 space-y-2 backdrop-blur-sm">
+          <div className="md:hidden bg-[#050B14]/95 border-b border-blue-900/30 text-white px-4 py-3 space-y-2 backdrop-blur-md">
             {navLinks.map((link) => (
               <NavItem key={link.label} {...link} className="block" />
             ))}
@@ -228,103 +229,109 @@ const App = () => {
       {/* Hero Section */}
       <div
         id="home"
-        className="relative min-h-screen flex flex-col items-center justify-center px-4 bg-cover bg-center bg-no-repeat bg-fixed"
-        style={{ backgroundImage: `url("/files/images/banner.jpg")` }}
+        className="relative min-h-screen flex flex-col items-center justify-center px-4 bg-[#050B14]"
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/30 backdrop-blur-sm"></div>
 
-        <div className="relative z-10 flex flex-col items-center justify-center w-full text-center mt-20">
-          <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight text-white drop-shadow-lg mb-8">
-            Gulf Coast Mesh
+        <div className="relative z-10 flex flex-col items-center justify-center w-full text-center mt-20 max-w-5xl mx-auto px-4">
+          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight text-white drop-shadow-lg mb-4 uppercase">
+            Gulf Coast <span className="text-[#10b981]">Mesh</span>
           </h1>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="text-[#10b981] font-semibold tracking-widest uppercase text-xs sm:text-sm mb-8 drop-shadow-sm">
+            Decentralized / Off-Grid / Community-powered
+          </div>
+
+          <p className="text-lg sm:text-xl text-gray-200 mb-10 leading-relaxed max-w-3xl mx-auto">
+            A growing group of individuals dedicated to interconnecting Louisiana&apos;s cities and others&apos; along the Gulf Coast with a decentralized, open-source messaging system. Providing a resilient communication channel that works even when infrastructure is damaged.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="https://docs.gulfcoastmesh.org/"
+              className="flex items-center justify-center gap-2 bg-[#10b981] text-black font-bold py-3 px-8 rounded-xl hover:bg-[#34d399] shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] transition-all duration-300 transform hover:-translate-y-1"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Join Our Network
+            </a>
+
             <a
               href="https://discord.gulfcoastmesh.org"
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-400 to-indigo-600 text-white font-semibold py-3 px-8 rounded-xl shadow-md hover:scale-105 hover:shadow-xl transition"
+              className="flex items-center justify-center gap-2 bg-[#059669] text-white font-semibold py-3 px-8 rounded-xl hover:bg-[#047857] shadow-[0_0_15px_rgba(5,150,105,0.4)] hover:shadow-[0_0_25px_rgba(5,150,105,0.6)] transition-all duration-300 transform hover:-translate-y-1"
               target="_blank"
               rel="noopener noreferrer"
             >
               Join Our Discord
-              <Icon
-                className="h-5 w-5 invert"
-                src="https://www.svgrepo.com/show/506463/discord.svg"
-                alt="Discord Logo"
-              />
             </a>
 
             <a
-              href="https://docs.gulfcoastmesh.org/"
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 to-emerald-600 text-white font-semibold py-3 px-8 rounded-xl shadow-md hover:scale-105 hover:shadow-xl transition"
+              href="https://analyzer.gulfcoastmesh.org/#/live"
+              className="flex items-center justify-center gap-2 bg-[#065f46] text-white font-semibold py-3 px-8 rounded-xl hover:bg-[#064e3b] shadow-[0_0_15px_rgba(6,95,70,0.4)] hover:shadow-[0_0_25px_rgba(6,95,70,0.6)] transition-all duration-300 transform hover:-translate-y-1"
               target="_blank"
               rel="noopener noreferrer"
             >
-              View Our Docs
+              Network Map
             </a>
           </div>
         </div>
       </div>
 
-      {/* Info Sections */}
-      <section id="about" className="bg-gradient-to-br from-blue-100 to-blue-200 dark:from-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-100 py-20 px-6">
-        <div className="max-w-4xl mx-auto bg-white/70 dark:bg-gray-800/70 p-8 rounded-2xl shadow-lg backdrop-blur-sm">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">What is the Gulf Coast Mesh?</h2>
-          <p className="text-lg leading-relaxed">
-            The Gulf Coast Mesh is a growing group of individuals dedicated to interconnecting Louisiana&apos;s cities and others&apos; along the Gulf Coast with a decentralized, open-source messaging system. Providing a resilient communication channel that helps families stay together and communicate with others even when infrastructure is damaged from natural disasters.
-          </p>
-        </div>
-      </section>
-
-      <section id="meshcore" className="bg-gradient-to-br from-pink-100 to-pink-200 dark:from-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-100 py-20 px-6">
-        <div className="max-w-4xl mx-auto bg-white/70 dark:bg-gray-800/70 p-8 rounded-2xl shadow-lg backdrop-blur-sm">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">What is Meshcore?</h2>
-          <p className="text-lg leading-relaxed">
-            Meshcore is similar to Meshtastic, but with a focus on message reliability. It uses dedicated repeater nodes with a much more sophisticated pathing solution, allowing for more reliable message sending and receiving. This allows repeater hops to reach up to 64, compared to Meshtastic&apos;s 7 hops, where anything higher causes unreliable messages.
-          </p>
-        </div>
-      </section>
-
-      <section id="meshtastic" className="bg-gradient-to-br from-orange-100 to-amber-200 dark:from-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-100 py-20 px-6">
-        <div className="max-w-4xl mx-auto bg-white/70 dark:bg-gray-800/70 p-8 rounded-2xl shadow-lg backdrop-blur-sm">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">What is Meshtastic?</h2>
-          <p className="text-lg leading-relaxed">
-            Meshtastic is a decentralized, open-source communication protocol that establishes a mesh network using low-power, long-range LoRa technology. It allows devices to send and receive text messages without relying on the internet, cellular networks, or any centralized infrastructure.
-          </p>
-        </div>
-      </section>
-
-      <section id="contact" className="bg-gradient-to-br from-green-100 to-green-200 dark:from-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-100 py-20 px-6">
-        <div className="max-w-4xl mx-auto bg-white/70 dark:bg-gray-800/70 p-8 rounded-2xl shadow-lg backdrop-blur-sm">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Contact</h2>
-          <p className="text-lg leading-relaxed">
-            If you&apos;d like to get in touch with us, Please email us at{" "}
-            <a href="mailto:contact@louisianamesh.org" className="hover:text-indigo-300 transition underline underline-offset-4">
-              contact@louisianamesh.org
-            </a>.
-          </p>
-        </div>
-      </section>
-
-      <section id="Sign up for our newsletter" className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-100 py-20 px-6">
-        <div className="max-w-4xl mx-auto bg-white/70 dark:bg-gray-800/70 p-8 rounded-2xl shadow-lg backdrop-blur-sm">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            <a href="https://gulfcoastmesh.org/emailsignup" className="hover:text-indigo-300 transition underline underline-offset-4">
-              Sign up for our newsletter
-            </a>
+      {/* How It Works */}
+      <section id="how-it-works" className="bg-[#050B14] py-20 px-6 border-t border-white/5">
+        <div className="max-w-6xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-white mb-16 tracking-tight">
+            How It <span className="text-[#10b981]">Works</span>
           </h2>
-          <p className="text-lg leading-relaxed">
-          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-[#0f172a] p-8 rounded-3xl border border-blue-500/20 text-left relative overflow-hidden hover:border-[#10b981]/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all duration-300 transform hover:-translate-y-1">
+              <div className="text-7xl font-black text-[#10b981]/10 absolute -top-6 -right-4 select-none">1</div>
+              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide relative z-10">Get a Radio</h3>
+              <p className="text-gray-300 leading-relaxed relative z-10">
+                LoRa mesh devices start around $30-100. Check out our recommended devices to get started.
+              </p>
+            </div>
+
+            <div className="bg-[#0f172a] p-8 rounded-3xl border border-blue-500/20 text-left relative overflow-hidden hover:border-[#10b981]/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all duration-300 transform hover:-translate-y-1">
+              <div className="text-7xl font-black text-[#10b981]/10 absolute -top-6 -right-4 select-none">2</div>
+              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide relative z-10">Install & Configure</h3>
+              <p className="text-gray-300 leading-relaxed relative z-10">
+                Flash MeshCore firmware and apply our local settings. Just takes about 10 minutes with our setup guide.
+              </p>
+            </div>
+
+            <div className="bg-[#0f172a] p-8 rounded-3xl border border-blue-500/20 text-left relative overflow-hidden hover:border-[#10b981]/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all duration-300 transform hover:-translate-y-1">
+              <div className="text-7xl font-black text-[#10b981]/10 absolute -top-6 -right-4 select-none">3</div>
+              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide relative z-10">Start Messaging</h3>
+              <p className="text-gray-300 leading-relaxed relative z-10">
+                Connect via Bluetooth to your phone and you&apos;re ready. Works anywhere within mesh range.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="newsletter" className="bg-[#0b1120] py-24 px-6 border-t border-blue-900/30">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-white mb-8 tracking-tight">
+            Stay <span className="text-[#10b981]">Connected</span>
+          </h2>
+          <a
+            href="https://gulfcoastmesh.org/emailsignup"
+            className="inline-flex items-center justify-center gap-2 bg-[#10b981] text-black font-bold py-4 px-10 rounded-xl hover:bg-[#34d399] shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] transition-all duration-300 transform hover:-translate-y-1 text-lg"
+          >
+            Sign up for our newsletter
+          </a>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 bg-gray-900 text-gray-400 dark:text-gray-300">
-        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+      <footer className="py-12 bg-[#050B14] text-gray-400 border-t border-white/5">
+        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-10 items-center">
           <div className="order-2 md:order-none text-center md:text-left text-sm flex flex-col items-center md:items-start">
-            <p className="font-semibold text-white mb-3">Thank You to Our Supporters</p>
+            <p className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Supporters</p>
             <div className="flex flex-wrap gap-2 justify-center md:justify-start">
               {["ma7", "n5msy", "talwah", "simon", "kyra", "terry", "mike", "rg3120", "Mike Baldwin"].map(name => (
-                <span key={name} className="px-3 py-1 bg-gray-800/80 text-indigo-300 rounded-full text-xs font-semibold tracking-wide border border-gray-700 shadow-sm hover:bg-gray-700 transition cursor-default">
+                <span key={name} className="px-3 py-1 bg-[#0f172a] text-[#10b981] rounded-full text-xs font-semibold tracking-wide border border-blue-500/20 shadow-sm hover:border-[#10b981] transition cursor-default">
                   {name}
                 </span>
               ))}
@@ -350,13 +357,13 @@ const App = () => {
             <p className="font-semibold text-white mb-2">Thank You to Our Partners</p>
             <a href="https://heltec.org/" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition" aria-label="Heltec Automation">
               {/* Updated Partner Logo using next/image */}
-              <Image 
-                src="https://heltec.org/wp-content/uploads/2021/05/heltec-logo.png" 
-                alt="Heltec Partner" 
-                width={140} 
-                height={40} 
-                className="h-10 w-auto mx-auto" 
-                style={{ objectFit: 'contain' }} 
+              <Image
+                src="https://heltec.org/wp-content/uploads/2021/05/heltec-logo.png"
+                alt="Heltec Partner"
+                width={140}
+                height={40}
+                className="h-10 w-auto mx-auto"
+                style={{ objectFit: 'contain' }}
               />
             </a>
           </div>
