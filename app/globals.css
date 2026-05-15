@@ -1,0 +1,218 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 246 249 253;
+    --bg-elevated: 255 255 255;
+    --fg: 6 18 31;
+    --fg-muted: 71 100 133;
+    --line: 200 214 230;
+    --ring: 17 182 164;
+    color-scheme: light;
+  }
+
+  html.dark {
+    --bg: 3 8 15;
+    --bg-elevated: 14 31 51;
+    --fg: 232 240 248;
+    --fg-muted: 158 181 206;
+    --line: 25 47 73;
+    --ring: 45 209 189;
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply min-h-screen font-sans antialiased;
+    background: rgb(var(--bg));
+    color: rgb(var(--fg));
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgba(17, 182, 164, 0.25);
+    color: inherit;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-gulf-400 ring-offset-2 ring-offset-[rgb(var(--bg))];
+  }
+}
+
+@layer components {
+  /* ---- Backdrop layers ---- */
+  .bg-canvas {
+    background:
+      radial-gradient(1200px 600px at 12% -10%, rgba(45, 209, 189, 0.18), transparent 55%),
+      radial-gradient(900px 500px at 90% 0%, rgba(249, 162, 40, 0.14), transparent 55%),
+      radial-gradient(700px 500px at 100% 100%, rgba(17, 182, 164, 0.12), transparent 55%),
+      rgb(var(--bg));
+  }
+
+  .dark .bg-canvas {
+    background:
+      radial-gradient(1100px 580px at 15% -5%, rgba(45, 209, 189, 0.18), transparent 55%),
+      radial-gradient(900px 520px at 95% 8%, rgba(249, 162, 40, 0.08), transparent 55%),
+      radial-gradient(720px 540px at 90% 100%, rgba(17, 182, 164, 0.16), transparent 55%),
+      linear-gradient(180deg, #03080f 0%, #061320 40%, #03080f 100%);
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(100, 124, 156, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(100, 124, 156, 0.08) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 75%);
+  }
+
+  .bg-noise {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.5'/></svg>");
+    opacity: 0.04;
+  }
+
+  .dark .bg-noise {
+    opacity: 0.07;
+  }
+
+  /* ---- Surfaces ---- */
+  .surface {
+    @apply rounded-2xl border bg-white/80 backdrop-blur-xl dark:bg-ink-900/60;
+    border-color: rgb(var(--line) / 0.6);
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.5) inset,
+      0 30px 80px -40px rgba(6, 18, 31, 0.25);
+  }
+
+  .dark .surface {
+    box-shadow:
+      0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+      0 36px 90px -36px rgba(0, 0, 0, 0.7);
+  }
+
+  .surface-strong {
+    @apply surface;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.7));
+  }
+
+  .dark .surface-strong {
+    background: linear-gradient(180deg, rgba(14, 31, 51, 0.85), rgba(6, 18, 31, 0.7));
+  }
+
+  /* ---- Buttons ---- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gulf-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent;
+  }
+
+  .btn-primary {
+    @apply btn text-ink-950;
+    background: linear-gradient(120deg, #2dd1bd 0%, #11b6a4 45%, #f9a228 110%);
+    background-size: 200% 100%;
+    box-shadow:
+      0 10px 30px -10px rgba(17, 182, 164, 0.55),
+      0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+    transition: background-position 0.6s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    background-position: 100% 0;
+    transform: translateY(-1px);
+    box-shadow:
+      0 14px 40px -8px rgba(17, 182, 164, 0.7),
+      0 0 0 1px rgba(255, 255, 255, 0.35) inset;
+  }
+
+  .btn-ghost {
+    @apply btn border bg-white/70 text-ink-800 hover:bg-white dark:bg-white/5 dark:text-ink-50 dark:hover:bg-white/10;
+    border-color: rgb(var(--line) / 0.7);
+  }
+
+  /* ---- Text helpers ---- */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-gulf-700 dark:text-gulf-300;
+    border-color: rgb(var(--line) / 0.6);
+    background: rgba(17, 182, 164, 0.06);
+  }
+
+  .gradient-text {
+    background: linear-gradient(110deg, #11b6a4 10%, #2dd1bd 35%, #f9a228 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    background-size: 200% 100%;
+    animation: shimmer 8s linear infinite;
+  }
+
+  .hairline {
+    @apply h-px w-full;
+    background: linear-gradient(90deg, transparent, rgb(var(--line)), transparent);
+  }
+
+  /* ---- Tile / Card patterns ---- */
+  .tile {
+    @apply relative overflow-hidden rounded-3xl border p-6 transition;
+    border-color: rgb(var(--line) / 0.6);
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  .dark .tile {
+    background: rgba(14, 31, 51, 0.6);
+  }
+
+  .tile:hover {
+    transform: translateY(-2px);
+    border-color: rgba(45, 209, 189, 0.45);
+    box-shadow: 0 30px 80px -40px rgba(17, 182, 164, 0.4);
+  }
+
+  .tile-accent::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(140deg, rgba(45, 209, 189, 0.6), transparent 40%, rgba(249, 162, 40, 0.5));
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .kbd {
+    @apply rounded-md border px-1.5 py-0.5 font-mono text-[11px] text-ink-700 dark:text-ink-100;
+    border-color: rgb(var(--line));
+    background: rgba(255, 255, 255, 0.6);
+  }
+
+  .dark .kbd {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
