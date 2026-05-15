@@ -3,6 +3,9 @@
 Snapshot of what was done in this session. The whole `development/` tree was
 built from scratch — none of the original repo's source code is reused.
 
+This file is the source of truth for the rebuild. The shorter `README.md`
+is the public-facing project doc; if they disagree, **NOTES.md wins**.
+
 ## Quick start
 
 ```bash
@@ -55,10 +58,10 @@ Defined in `tailwind.config.ts` + `app/globals.css`.
 
 | Route           | What it is                                                |
 | --------------- | --------------------------------------------------------- |
-| `/`             | Homepage: live-stats hero, embedded explorer map, regions, "how it works", CTA |
-| `/meshmap`      | Two embedded live maps (Explorer + Meshview) + MQTT setup |
+| `/`             | Homepage: live-stats hero, embedded Meshcore Analyzer, Meshcore stack snapshot, regions, "how it works", CTA |
+| `/meshmap`      | Two embedded live views (Meshcore Analyzer, Meshtastic Meshview) + MQTT setup |
 | `/links`        | Curated docs/community/upstream resources                 |
-| `/emailsignup`  | Newsletter signup                                         |
+| `/emailsignup`  | Newsletter signup (Listmonk-backed)                       |
 
 `app/icon.svg` ships as the favicon.
 
@@ -68,7 +71,9 @@ Defined in `tailwind.config.ts` + `app/globals.css`.
 
 - Fetches `https://explorer.gulfcoastmesh.org/api/nodes` and `/stats`.
 - Buckets nodes by US state (LA/MS/AL/FL/TX), separates active vs total, and
-  reports a top routers count.
+  reports counts for **repeaters** and **room servers only**. Companion
+  devices are intentionally not tracked — they're end-user gear, not network
+  infrastructure, so the site doesn't surface their counts.
 - Wraps both in `revalidate: 300` (ISR, 5 minutes) with safe fallbacks if
   either endpoint blips.
 
@@ -76,6 +81,10 @@ It exports `getMeshStats()` and a small `fmt()` formatter. The homepage and
 regions strip consume it. If the upstream API is unreachable at build/render
 time the page degrades to copy-only ("Live on the bayou") instead of fake
 numbers.
+
+State buckets are approximate lat/lon rectangles. The LA→MS boundary follows
+the Pearl River at roughly `lon = -89.7` (previous bucket was broken — MS
+collapsed to a sliver, so coastal MS nodes got mis-classified as LA).
 
 ## Embedded maps
 
@@ -89,10 +98,19 @@ numbers.
 
 Embeds used:
 
-- `https://explorer.gulfcoastmesh.org/` on `/` and `/meshmap`.
-- `https://meshview.gulfcoastmesh.org/chat` on `/meshmap`.
+- `https://analyzer.gulfcoastmesh.org/#/live` on `/` (hero) and `/meshmap` (primary Meshcore view — live packet analyzer with channels, traces, observers, perf).
+- `https://meshview.gulfcoastmesh.org/chat` on `/meshmap` (Meshtastic footprint).
 
-Both are confirmed not to send `X-Frame-Options: DENY`.
+The old `https://explorer.gulfcoastmesh.org/` embed has been removed from
+the user-facing surface entirely — it is **no longer iframed anywhere**.
+The Explorer API at `explorer.gulfcoastmesh.org/api/nodes` and `/stats`
+is still consumed by `lib/mesh-stats.ts` as the data source for the
+homepage stats strip, since the analyzer doesn't expose those aggregates
+through a JSON endpoint.
+
+Meshview is confirmed not to send `X-Frame-Options: DENY`. If the
+analyzer ever rejects framing the `LiveMap` component already falls back
+to an "Open in new tab" CTA.
 
 ## Theme handling
 
@@ -102,7 +120,8 @@ Both are confirmed not to send `X-Frame-Options: DENY`.
   `prefers-color-scheme` media query.
 - `components/theme-script.tsx` is the inline script that runs before paint
   to apply the right `light` / `dark` class on `<html>`, killing FOUC.
-- `components/site-header.tsx` exposes the sun/moon toggle.
+- `components/theme-toggle.tsx` is the sun/moon button itself.
+- `components/site-header.tsx` mounts the toggle in the floating nav.
 
 ## Tooling fixes that took real work
 
@@ -126,29 +145,60 @@ Both are confirmed not to send `X-Frame-Options: DENY`.
 - New SVG mark used in both the header and footer (rounded ring + signal arc).
 - Footer now links to **Live maps**, **Resources**, **Newsletter**, and
   **Transparency** (`docs.gulfcoastmesh.org/transparency/`).
+- GitHub link in both header and footer points at the
+  [`GulfCoastMesh`](https://github.com/GulfCoastMesh) org (footer goes
+  directly to the `Website` repo).
 - Contact text, Heltec partner logo, Ko-fi support link all preserved from
   the original site.
 
 ## Honesty edits
 
-User asked specifically to stop overselling the network. Done:
+User asked to stop overselling the network. The current line:
 
 - Hero eyebrow now reads `"<N> nodes live · expanding the Gulf"` (real count
   from explorer API), instead of pretending coverage exists everywhere.
-- Regions strip shows a real count for LA and `Coming soon` for MS/AL/FL/TX.
-- "How it works" links to actual docs.gulfcoastmesh.org pages instead of
+- Regions strip shows the real per-state count when nodes exist there.
+  Louisiana and **Mississippi Coast** are flagged as live (Mississippi has
+  a `forceLive: true` override in `app/page.tsx`); TX / AL / FL still show
+  `Coming soon` until nodes appear.
+- "How it works" links to actual `docs.gulfcoastmesh.org` pages instead of
   generic placeholders.
 - Footer / hero CTAs mention the **Weekly Monday voice net on Discord** so
   the next-step is concrete, not vague "join the community".
+
+## Homepage stack positioning
+
+The homepage now positions **Meshcore** as the primary stack:
+
+- Hero "Stack" pill row shows Meshcore / LoRa 915 MHz / End-to-end (no
+  Meshtastic pill).
+- The dark "Stack snapshot" inset card is Meshcore-only — heading is just
+  "Meshcore" with a single `ProtocolCard`.
+- `/meshmap` still shows **both** networks side by side: "MeshCore — Explorer"
+  as the primary embed and "Meshtastic — Meshview" as the secondary one.
+- `/links` still references upstream Meshtastic resources
+  (`meshtastic.org`, the web-flasher, the Meshtastic docs).
+
+So Meshtastic is intentionally **off the homepage stack pitch** but still
+documented on the maps and resources pages.
+
+## Newsletter signup
+
+`/emailsignup` is wired up to **Listmonk** at
+`https://lists.louisianamesh.org/subscription/form` (POST, `no-cors`). Two
+list IDs live at the top of `app/emailsignup/page.tsx`:
+
+- `ALERTS_LIST_ID` — required, posted on every submit.
+- `NEWS_LIST_ID` — opt-in via the "Also send me weekly news" checkbox.
+
+If the list ever moves to a different Listmonk host or new IDs, those two
+constants and the `fetch()` URL are the only things to change.
 
 ## Things I didn't touch (decisions to make later)
 
 - **Meshview node count**: explorer's API gives us numbers, but meshview has
   its own user list at `/chat`. Not currently fetched. Could be added to
   `lib/mesh-stats.ts` if you want a "Meshview users online: N" stat.
-- **`/emailsignup`** — kept as a styled shell. There's no backing service
-  wired up; whoever owns the mail list (Mailchimp / Buttondown / etc.) needs
-  to drop in the form action.
 - **Open Graph image** — `app/icon.svg` is the favicon; no `opengraph-image`
   is generated. Easy add later.
 - **`Current/`** (the original site at the repo root) was **not** modified.
@@ -171,7 +221,8 @@ development/
 │  ├─ live-map.tsx
 │  ├─ site-footer.tsx
 │  ├─ site-header.tsx
-│  └─ theme-script.tsx
+│  ├─ theme-script.tsx
+│  └─ theme-toggle.tsx
 ├─ lib/
 │  ├─ mesh-stats.ts
 │  └─ theme.ts

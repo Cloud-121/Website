@@ -9,7 +9,6 @@ import {
   Compass,
   Cpu,
   Map as MapIcon,
-  Radio,
   Router,
   ShieldCheck,
   Smartphone,
@@ -24,12 +23,13 @@ type Region = {
   code: StateCode;
   name: string;
   cities: string;
+  forceLive?: boolean;
 };
 
 const regions: Region[] = [
   { code: "TX", name: "South Texas", cities: "Corpus Christi · Houston · Galveston" },
   { code: "LA", name: "Louisiana", cities: "Lake Charles · Lafayette · Baton Rouge · New Orleans" },
-  { code: "MS", name: "Mississippi Coast", cities: "Gulfport · Biloxi · Pascagoula" },
+  { code: "MS", name: "Mississippi Coast", cities: "Gulfport · Biloxi · Pascagoula", forceLive: true },
   { code: "AL", name: "Alabama Shore", cities: "Mobile · Dauphin Island · Gulf Shores" },
   { code: "FL", name: "Northwest Florida", cities: "Pensacola · Destin · Panama City" },
 ];
@@ -80,7 +80,7 @@ export default async function HomePage() {
         {
           value: fmt(mesh.repeaters),
           label: "repeaters",
-          caption: `${fmt(mesh.companions)} companions · ${fmt(mesh.rooms)} room servers`,
+          caption: `${fmt(mesh.rooms)} room servers on the backbone`,
         },
         {
           value: fmt(mesh.activeLast24h),
@@ -96,7 +96,7 @@ export default async function HomePage() {
     : [
         { value: "5", label: "Gulf states", caption: "TX · LA · MS · AL · FL" },
         { value: "1,600 mi", label: "of coastline", caption: "Brownsville → Apalachicola" },
-        { value: "64", label: "max mesh hops", caption: "via Meshcore pathing" },
+        { value: "32", label: "max mesh hops", caption: "via Meshcore pathing" },
         { value: "100%", label: "open source", caption: "Hardware + firmware + docs" },
       ];
 
@@ -165,7 +165,6 @@ export default async function HomePage() {
               <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-500 dark:text-ink-400">
                 Stack
               </span>
-              <Pill icon={Radio}>Meshtastic</Pill>
               <Pill icon={Cpu}>Meshcore</Pill>
               <Pill icon={Boxes}>LoRa · 915 MHz</Pill>
               <Pill icon={ShieldCheck}>End-to-end</Pill>
@@ -176,13 +175,13 @@ export default async function HomePage() {
           <div className="lg:col-span-7">
             <div className="relative">
               <LiveMap
-                src="https://explorer.gulfcoastmesh.org/"
-                title="Gulf Coast Mesh — Explorer (live)"
-                label="Gulf Coast Explorer"
+                src="https://analyzer.gulfcoastmesh.org/#/live"
+                title="Gulf Coast Mesh — Analyzer (live)"
+                label="Gulf Coast Analyzer"
                 sub={
                   mesh.ok
                     ? `MeshCore · ${fmt(mesh.totalMapped)} nodes · ${fmt(mesh.activeLast24h)} active 24h`
-                    : "MeshCore · live nodes & links"
+                    : "MeshCore · live packets & nodes"
                 }
                 aspect="aspect-[5/4] sm:aspect-[4/3] lg:aspect-[5/4] xl:aspect-[6/5]"
                 className="lg:min-h-[560px]"
@@ -213,15 +212,13 @@ export default async function HomePage() {
           </div>
           {mesh.ok ? (
             <p className="border-t border-ink-200/60 px-5 py-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-ink-500 dark:border-white/10 dark:text-ink-400">
-              live snapshot · auto-refreshes every 5 min · source:{" "}
-              <a
-                href="https://explorer.gulfcoastmesh.org/"
-                target="_blank"
-                rel="noopener noreferrer"
+              live snapshot · auto-refreshes every 5 min ·{" "}
+              <Link
+                href="/meshmap"
                 className="text-gulf-700 hover:underline dark:text-gulf-300"
               >
-                explorer.gulfcoastmesh.org
-              </a>
+                open live maps
+              </Link>
             </p>
           ) : null}
         </div>
@@ -263,7 +260,7 @@ export default async function HomePage() {
                 href="/meshmap"
                 className="surface group flex items-center justify-between rounded-2xl px-4 py-3 transition hover:-translate-y-0.5"
               >
-                <span className="text-sm font-semibold text-ink-900 dark:text-white">Open Explorer</span>
+                <span className="text-sm font-semibold text-ink-900 dark:text-white">Open Analyzer</span>
                 <ArrowUpRight className="h-4 w-4 text-gulf-700 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 dark:text-gulf-300" aria-hidden />
               </Link>
               <Link
@@ -315,27 +312,20 @@ export default async function HomePage() {
                 Stack snapshot
               </p>
               <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                Meshcore <span className="text-ink-300">+</span> Meshtastic
+                Meshcore
               </h2>
               <p className="mt-4 max-w-md text-sm leading-relaxed text-ink-300">
-                Two strong approaches, one obsession: messages that arrive. Pick the stack that fits the use case — or
-                run both side-by-side.
+                One obsession: messages that arrive. Meshcore is the backbone of the Gulf Coast network —
+                reliability-first routing built to scale from a single rooftop to the whole coast.
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:col-span-7">
+            <div className="lg:col-span-7">
               <ProtocolCard
                 icon={Sparkles}
                 tint="from-fuchsia-500/20 to-gulf-500/10"
                 title="Meshcore"
-                blurb="Reliability-first routing with deep pathing — up to 64 hops for coast-scale links and repeater backbones."
+                blurb="Reliability-first routing with deep pathing — up to 32 hops for coast-scale links and repeater backbones."
                 tags={["Long hops", "Repeater-friendly", "Pathing"]}
-              />
-              <ProtocolCard
-                icon={Radio}
-                tint="from-gulf-500/20 to-sky-500/10"
-                title="Meshtastic"
-                blurb="LoRa mesh texting without carriers — perfect for handhelds, neighborhood nets, and go-bag setups."
-                tags={["Handheld", "LoRa", "Approachable"]}
               />
             </div>
           </div>
@@ -410,7 +400,7 @@ export default async function HomePage() {
             <ul className="grid gap-3 sm:grid-cols-2">
               {regions.map((r) => {
                 const count = mesh.byState[r.code] ?? 0;
-                const live = count > 0;
+                const live = count > 0 || r.forceLive === true;
                 return (
                   <li
                     key={r.code}
@@ -438,7 +428,7 @@ export default async function HomePage() {
                         {live ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-gulf-500/15 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-gulf-700 dark:text-gulf-200">
                             <span className="h-1 w-1 rounded-full bg-gulf-500" />
-                            {fmt(count)} live
+                            {count > 0 ? `${fmt(count)} live` : "Live"}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-sand-700 dark:border-white/10 dark:text-sand-300" style={{ borderColor: "rgb(var(--line) / 0.7)" }}>

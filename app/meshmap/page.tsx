@@ -5,7 +5,7 @@ import { LiveMap } from "@/components/live-map";
 export const metadata = {
   title: "Live mesh maps",
   description:
-    "Explorer and Meshview — real-time views of Meshcore and Meshtastic activity across the entire Gulf Coast.",
+    "Live packet analyzer and Meshview — real-time views of Meshcore and Meshtastic activity across the entire Gulf Coast.",
 };
 
 const mqttRows: Array<[string, string]> = [
@@ -32,12 +32,12 @@ export default function MeshmapPage() {
           See the mesh lighting up the coast.
         </h1>
         <p className="mt-5 text-pretty text-lg text-ink-600 dark:text-ink-300">
-          Two complementary views — our primary Meshcore network and the Meshtastic footprint — embedded right here.
+          Two complementary views — the live Meshcore analyzer and the Meshtastic footprint — embedded right here.
           Pan, zoom, and click nodes just like on the standalone sites.
         </p>
       </header>
 
-      {/* Primary MeshCore Explorer */}
+      {/* Primary MeshCore Analyzer */}
       <section className="mt-12">
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
@@ -45,18 +45,19 @@ export default function MeshmapPage() {
               Primary network
             </p>
             <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink-900 sm:text-3xl dark:text-white">
-              MeshCore — Explorer
+              MeshCore — Live analyzer
             </h2>
           </div>
           <p className="hidden max-w-sm text-sm text-ink-600 sm:block dark:text-ink-300">
-            Live nodes, link heat, and routing across the Gulf. Click the logo inside the map to toggle the HUD.
+            Live packets as they arrive — channels, traces, observers, perf. The real-time view of what the mesh is
+            doing right now.
           </p>
         </div>
         <LiveMap
-          src="https://explorer.gulfcoastmesh.org/"
-          title="Gulf Coast Mesh — Explorer (live)"
-          label="Gulf Coast Explorer"
-          sub="MeshCore · MQTT · realtime"
+          src="https://analyzer.gulfcoastmesh.org/#/live"
+          title="Gulf Coast Mesh — Analyzer (live)"
+          label="Gulf Coast Analyzer"
+          sub="MeshCore · packets · channels · perf"
           aspect="aspect-[4/3] sm:aspect-[16/10] lg:aspect-[2/1]"
         />
       </section>

@@ -137,7 +137,7 @@ const community: Resource[] = [
   {
     title: "GitHub",
     description: "Source code for the website, docs, and supporting tooling — patches welcome.",
-    href: "https://github.com/LouisianaMeshCommunity",
+    href: "https://github.com/GulfCoastMesh",
     icon: Github,
     tag: "Open source",
     accent: "from-ink-400/25 to-gulf-500/10",

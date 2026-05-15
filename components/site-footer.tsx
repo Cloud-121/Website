@@ -40,7 +40,7 @@ export function SiteFooter() {
                 contact@louisianamesh.org
               </a>
               <a
-                href="https://github.com/LouisianaMeshCommunity/Website"
+                href="https://github.com/GulfCoastMesh/Website"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:bg-ink-50 dark:border-white/10 dark:text-ink-200 dark:hover:bg-white/5"

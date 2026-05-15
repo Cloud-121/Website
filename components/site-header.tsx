@@ -82,7 +82,7 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <a
-            href="https://github.com/LouisianaMeshCommunity"
+            href="https://github.com/GulfCoastMesh"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden h-10 w-10 items-center justify-center rounded-xl border bg-white/70 text-ink-800 transition hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-ink-50 dark:hover:bg-white/10 lg:inline-flex"

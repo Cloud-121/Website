@@ -20,8 +20,8 @@ export type StateCode = "TX" | "LA" | "MS" | "AL" | "FL";
 
 function bucket(lat: number, lon: number): StateCode | "other" {
   if (lat >= 25.0 && lat <= 30.0 && lon >= -98.0 && lon <= -93.5) return "TX";
-  if (lat >= 28.9 && lat <= 33.0 && lon >= -94.0 && lon <= -88.85) return "LA";
-  if (lat >= 30.0 && lat <= 35.0 && lon >= -91.7 && lon < -88.0 && lon > -88.85) return "MS";
+  if (lat >= 28.9 && lat <= 33.0 && lon >= -94.0 && lon < -89.7) return "LA";
+  if (lat >= 30.0 && lat <= 35.0 && lon >= -89.7 && lon < -88.1) return "MS";
   if (lat >= 30.0 && lat <= 35.0 && lon >= -88.5 && lon <= -87.0) return "AL";
   if (lat >= 30.0 && lat <= 31.5 && lon >= -87.6 && lon <= -82.0) return "FL";
   return "other";
@@ -58,7 +58,6 @@ export type MeshStats = {
   totalMapped: number;
   totalSeen: number;
   repeaters: number;
-  companions: number;
   rooms: number;
   activeLast24h: number;
   onlineNow: number;
@@ -75,7 +74,6 @@ const FALLBACK: MeshStats = {
   totalMapped: 0,
   totalSeen: 0,
   repeaters: 0,
-  companions: 0,
   rooms: 0,
   activeLast24h: 0,
   onlineNow: 0,
@@ -98,7 +96,6 @@ export async function getMeshStats(): Promise<MeshStats> {
 
     const byState: MeshStats["byState"] = { TX: 0, LA: 0, MS: 0, AL: 0, FL: 0, other: 0 };
     let repeaters = 0;
-    let companions = 0;
     let rooms = 0;
     let activeLast24h = 0;
     let onlineNow = 0;
@@ -108,7 +105,6 @@ export async function getMeshStats(): Promise<MeshStats> {
         byState[bucket(n.lat, n.lon)]++;
       }
       if (n.role === "repeater") repeaters++;
-      else if (n.role === "companion") companions++;
       else if (n.role === "room") rooms++;
       if (typeof n.last_seen_ts === "number") {
         const delta = serverTime - n.last_seen_ts;
@@ -125,7 +121,6 @@ export async function getMeshStats(): Promise<MeshStats> {
       totalMapped: statsJson.mapped_devices ?? nodes.length,
       totalSeen: statsJson.seen_devices ?? nodes.length,
       repeaters,
-      companions,
       rooms,
       activeLast24h,
       onlineNow,
