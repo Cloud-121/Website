@@ -175,9 +175,9 @@ export default async function HomePage() {
           <div className="lg:col-span-7">
             <div className="relative">
               <LiveMap
-                src="https://analyzer.gulfcoastmesh.org/#/live"
-                title="Gulf Coast Mesh — Analyzer (live)"
-                label="Gulf Coast Analyzer"
+                src="https://explorer.gulfcoastmesh.org/embed"
+                title="Gulf Coast Mesh — Explorer (live)"
+                label="Gulf Coast Explorer"
                 sub={
                   mesh.ok
                     ? `MeshCore · ${fmt(mesh.totalMapped)} nodes · ${fmt(mesh.activeLast24h)} active 24h`
