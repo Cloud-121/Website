@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import {
   Wifi,
   Smartphone,
@@ -15,7 +16,11 @@ import {
   Zap,
   Maximize2,
   Terminal as TerminalIcon,
-  X
+  X,
+  Sparkles,
+  Copy,
+  Check,
+  ArrowUpRight,
 } from 'lucide-react';
 
 // Real flashing dependencies (dynamic import to avoid SSR issues if any, but "use client" handles it)
@@ -23,20 +28,48 @@ import { ESPLoader, Transport } from 'esptool-js';
 import type { FlashOptions } from 'esptool-js';
 
 // ==========================================
-// MOCK NODE.JS BACKEND CALLS (PLACEHOLDERS)
+// SERIAL SUPPORT DETECTION (SSR-SAFE)
 // ==========================================
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const backendAPI = {
-  saveDeviceConfig: async (name: string) => {
-    console.log(`NODEJS: Saving device name '${name}' to database/device...`);
-    return new Promise(resolve => setTimeout(resolve, 1000));
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  saveRepeaterConfig: async (config: any) => {
-    console.log(`NODEJS: Saving repeater config to database:`, config);
-    return new Promise(resolve => setTimeout(resolve, 1500));
-  }
+type SerialSupportState = 'checking' | 'supported' | 'insecure' | 'unsupported';
+
+const subscribeNoop = () => () => {
+  /* no external subscription — value never changes after mount */
 };
+
+function getSerialSupportSnapshot(): SerialSupportState {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return 'checking';
+  if ('serial' in navigator) return 'supported';
+  if (!window.isSecureContext) return 'insecure';
+  return 'unsupported';
+}
+
+function getServerSerialSupportSnapshot(): SerialSupportState {
+  return 'checking';
+}
+
+// ==========================================
+// BROWSER DETECTION (best-effort, used only to tailor the "not supported" copy)
+// ==========================================
+type BrowserKind = 'unknown' | 'firefox' | 'safari' | 'ios' | 'chromium';
+
+function getBrowserKindSnapshot(): BrowserKind {
+  if (typeof navigator === 'undefined') return 'unknown';
+  const ua = navigator.userAgent || '';
+  // iOS first — every iOS browser uses WebKit and cannot ship Web Serial,
+  // including Chrome / Edge / Brave / Firefox on iOS.
+  const platform = (navigator as Navigator & { platform?: string }).platform ?? '';
+  const maxTouch = (navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints ?? 0;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && maxTouch > 1);
+  if (isIOS) return 'ios';
+  if (/Firefox\//.test(ua) && !/Seamonkey/.test(ua)) return 'firefox';
+  if (/Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR|Brave/.test(ua)) return 'safari';
+  if (/Chrome|Chromium|Edg|OPR|Brave/.test(ua)) return 'chromium';
+  return 'unknown';
+}
+
+function getServerBrowserKindSnapshot(): BrowserKind {
+  return 'unknown';
+}
 
 // ==========================================
 // WIZARD UI COMPONENT
@@ -59,7 +92,6 @@ export default function SetupWizard() {
   };
 
   const [step, setStep] = useState('intro');
-  const [deviceName, setDeviceName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState('');
   const [flashProgress, setFlashProgress] = useState(0);
@@ -71,9 +103,20 @@ export default function SetupWizard() {
   const [isMapDragging, setIsMapDragging] = useState(false);
 
   // Serial API state (UI only)
-  type SerialSupport = 'checking' | 'supported' | 'insecure' | 'unsupported';
-  const [serialSupport, setSerialSupport] = useState<SerialSupport>('checking');
+  // Computed via useSyncExternalStore so we can derive the value on the client without
+  // calling setState inside an effect (React 19 / react-hooks/set-state-in-effect).
+  const serialSupport = useSyncExternalStore<SerialSupportState>(
+    subscribeNoop,
+    getSerialSupportSnapshot,
+    getServerSerialSupportSnapshot,
+  );
+  const browserKind = useSyncExternalStore<BrowserKind>(
+    subscribeNoop,
+    getBrowserKindSnapshot,
+    getServerBrowserKindSnapshot,
+  );
   const [serialStatus, setSerialStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   // Hardware Refs (for actual logic)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,17 +155,6 @@ export default function SetupWizard() {
     email: '',
     password: ''
   });
-
-  // Check for Web Serial compatibility on mount
-  useEffect(() => {
-    if ('serial' in navigator) {
-      setSerialSupport('supported');
-    } else if (!window.isSecureContext) {
-      setSerialSupport('insecure');
-    } else {
-      setSerialSupport('unsupported');
-    }
-  }, []);
 
   useEffect(() => {
     if (!isMapDragging) return;
@@ -695,8 +727,8 @@ export default function SetupWizard() {
   const getProgress = () => {
     const steps: Record<string, number> = {
       intro: 0,
-      client_explain: 10, client_select_device: 20, client_connect: 35, client_flashing: 50, client_error: 50, client_restart: 70, client_name: 85, client_ready: 100,
-      repeater_explain: 10, repeater_select_device: 20, repeater_connect: 35, repeater_flashing: 50, repeater_error: 50, repeater_restart: 70, repeater_config: 85, repeater_ready: 100
+      client_explain: 15, client_select_device: 30, client_connect: 50, client_flashing: 75, client_error: 75, client_restart: 100,
+      repeater_explain: 10, repeater_select_device: 20, repeater_connect: 35, repeater_flashing: 50, repeater_error: 50, repeater_restart: 70, repeater_config: 85, repeater_ready: 100,
     };
     return steps[step] || 0;
   };
@@ -714,74 +746,217 @@ export default function SetupWizard() {
 
   const serialAvailable = serialSupport === 'supported';
 
+  const handleCopyUrl = async () => {
+    if (typeof window === 'undefined') return;
+    const url = window.location.href;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        // Fallback for older browsers / unusual contexts where clipboard API is gated.
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopiedUrl(true);
+      window.setTimeout(() => setCopiedUrl(false), 2000);
+    } catch (err) {
+      console.error('Clipboard copy failed:', err);
+    }
+  };
+
   const renderCompatibilityWarning = () => {
-    if (serialSupport === 'checking') return null;
+    if (serialSupport === 'checking' || serialSupport === 'supported') return null;
 
     if (serialSupport === 'insecure') {
       return (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start animate-in fade-in slide-in-from-top-2 text-left">
-          <AlertTriangle className="text-amber-600 mt-0.5 mr-3 flex-shrink-0" size={20} />
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-sand-400/40 bg-sand-400/10 p-4 text-left">
+          <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sand-700 dark:text-sand-300" aria-hidden />
           <div>
-            <h3 className="font-semibold text-amber-900 text-sm">Secure Connection Required</h3>
-            <p className="text-amber-800 text-xs mt-1">
-              Web Serial only works over HTTPS or on this computer via{' '}
-              <span className="font-mono">localhost</span>. Open{' '}
-              <span className="font-mono">http://localhost:3000/setup</span> on the machine
-              with the USB cable, or use your site&apos;s HTTPS URL.
+            <h3 className="font-display text-sm font-semibold text-ink-900 dark:text-white">Secure connection required</h3>
+            <p className="mt-1 text-xs leading-relaxed text-ink-600 dark:text-ink-300">
+              Web Serial only works over HTTPS or via <code className="kbd">localhost</code>. Open{' '}
+              <code className="kbd">http://localhost:3000/setup</code> on the machine with the USB cable, or use the HTTPS site URL.
             </p>
           </div>
         </div>
       );
     }
 
-    if (serialSupport === 'unsupported') {
-      return (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start animate-in fade-in slide-in-from-top-2 text-left">
-          <AlertTriangle className="text-red-500 mt-0.5 mr-3 flex-shrink-0" size={20} />
-          <div>
-            <h3 className="font-semibold text-red-900 text-sm">Browser Not Compatible</h3>
-            <p className="text-red-700 text-xs mt-1">
-              Your browser does not expose the Web Serial API. Use Chrome, Edge, or Brave in a
-              normal browser window (not an embedded preview or in-app browser).
-            </p>
+    // Tailored copy by detected browser. The user almost certainly hit this because
+    // they're on Firefox/Safari/iOS or inside an embedded webview — say so plainly.
+    const messages: Record<BrowserKind, { title: string; body: React.ReactNode; suggestion: string }> = {
+      firefox: {
+        title: 'Firefox can’t run the flasher',
+        body: (
+          <>
+            Firefox doesn’t ship the <span className="font-semibold text-ink-900 dark:text-white">Web Serial API</span> the
+            flasher needs to talk to ESP32 boards (Mozilla declined the spec). Open this same page in any
+            Chromium-based browser to continue.
+          </>
+        ),
+        suggestion: 'Chrome, Edge, Brave, Arc, Vivaldi, or Opera will all work.',
+      },
+      safari: {
+        title: 'Safari can’t run the flasher',
+        body: (
+          <>
+            Safari doesn’t expose the <span className="font-semibold text-ink-900 dark:text-white">Web Serial API</span>.
+            Open this page in a Chromium-based browser instead.
+          </>
+        ),
+        suggestion: 'Chrome, Edge, Brave, Arc, or Vivaldi all work on macOS.',
+      },
+      ios: {
+        title: 'Web Serial isn’t available on iOS',
+        body: (
+          <>
+            Every browser on iPhone and iPad uses Apple’s WebKit, which doesn’t support Web Serial — even
+            Chrome / Edge / Brave for iOS. You’ll need a desktop computer to flash a node.
+          </>
+        ),
+        suggestion: 'Open this URL on a Mac, Windows, or Linux machine in Chrome / Edge / Brave.',
+      },
+      chromium: {
+        title: 'This window can’t reach Web Serial',
+        body: (
+          <>
+            Looks like a Chromium-based browser, but the <span className="font-semibold text-ink-900 dark:text-white">Web Serial API</span>
+            isn’t available here. That’s common inside embedded previews (IDE / VS Code / Discord), in-app
+            webviews, and some stripped-down Linux Chromium packages.
+          </>
+        ),
+        suggestion: 'Open this URL in a normal Chrome, Edge, or Brave tab.',
+      },
+      unknown: {
+        title: 'Browser not compatible',
+        body: (
+          <>
+            Your browser doesn’t expose the <span className="font-semibold text-ink-900 dark:text-white">Web Serial API</span>.
+            Open this page in a normal Chrome, Edge, or Brave window — not an embedded preview or in-app browser.
+          </>
+        ),
+        suggestion: 'Chrome, Edge, Brave, Arc, Vivaldi, or Opera all work.',
+      },
+    };
+
+    const { title, body, suggestion } = messages[browserKind];
+
+    return (
+      <div className="mb-6 rounded-2xl border border-coral-500/40 bg-coral-500/10 p-5 text-left">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-coral-500" aria-hidden />
+          <div className="min-w-0 flex-1 space-y-3">
+            <div>
+              <h3 className="font-display text-sm font-semibold text-ink-900 dark:text-white">{title}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-ink-600 dark:text-ink-300">{body}</p>
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
+                {suggestion}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyUrl}
+                className="inline-flex items-center gap-2 rounded-full border border-gulf-500/40 bg-gulf-500/10 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-gulf-700 transition hover:bg-gulf-500/20 dark:text-gulf-200"
+                aria-label="Copy this page URL to the clipboard"
+              >
+                {copiedUrl ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" aria-hidden />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" aria-hidden />
+                    Copy this URL
+                  </>
+                )}
+              </button>
+              <a
+                href="https://discord.gulfcoastmesh.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500 underline-offset-4 transition hover:text-gulf-700 hover:underline dark:text-ink-400 dark:hover:text-gulf-300"
+              >
+                Need help? Ask in Discord
+                <ArrowUpRight className="h-3 w-3" aria-hidden />
+              </a>
+            </div>
           </div>
         </div>
-      );
-    }
-
-    return null;
+      </div>
+    );
   };
 
+  const BackButton = ({ to }: { to: string }) => (
+    <button
+      type="button"
+      onClick={() => goTo(to)}
+      className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500 transition hover:text-gulf-700 dark:text-ink-400 dark:hover:text-gulf-300"
+    >
+      <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Back
+    </button>
+  );
+
   const renderTerminal = () => (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-all ${showTerminal ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-      <div className="w-full max-w-3xl bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[65vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gray-900/50">
-          <div className="flex items-center gap-2 text-gray-300">
-            <TerminalIcon size={18} />
-            <span className="font-mono text-sm font-semibold">ESP32 Flash Terminal</span>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-sm transition-opacity ${
+        showTerminal ? 'opacity-100' : 'pointer-events-none opacity-0'
+      }`}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Flash terminal"
+    >
+      <div className="flex h-[65vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-ink-950 shadow-glow">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+          <div className="flex items-center gap-2 text-ink-200">
+            <TerminalIcon className="h-4 w-4" aria-hidden />
+            <span className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-ink-100">
+              ESP32 flash terminal
+            </span>
           </div>
-          <button onClick={() => setShowTerminal(false)} className="text-gray-500 hover:text-white transition-colors">
-            <X size={20} />
+          <button
+            type="button"
+            onClick={() => setShowTerminal(false)}
+            className="rounded-full p-1.5 text-ink-400 transition hover:bg-white/5 hover:text-white"
+            aria-label="Close terminal"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-6 font-mono text-xs leading-relaxed text-emerald-400 bg-black scrollbar-thin scrollbar-thumb-gray-800">
+        <div className="flex-1 overflow-y-auto bg-black/80 p-6 font-mono text-[11px] leading-relaxed text-gulf-300">
           {terminalLogs.map((log, i) => (
             <span key={i} className="whitespace-pre-wrap">{log}</span>
           ))}
           <div ref={terminalEndRef} />
         </div>
-        <div className="px-6 py-3 bg-gray-900 border-t border-gray-800 flex justify-between items-center">
+        <div className="flex items-center justify-between border-t border-white/10 px-6 py-3">
           <div className="flex items-center gap-4">
-            <span className="text-[10px] text-gray-500 uppercase tracking-widest">Device: {selectedDevice || 'None'}</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-400">
+              Device: {selectedDevice || 'none'}
+            </span>
             {isProcessing && (
-              <span className="text-[10px] text-blue-400 uppercase tracking-widest animate-pulse">Flashing in progress...</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gulf-300 animate-pulse">
+                Flashing in progress…
+              </span>
             )}
           </div>
           <button
-            onClick={() => { terminalLogsRef.current = []; setTerminalLogs([]); }}
-            className="text-xs text-gray-500 hover:text-white underline"
+            type="button"
+            onClick={() => {
+              terminalLogsRef.current = [];
+              setTerminalLogs([]);
+            }}
+            className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-400 underline-offset-4 transition hover:text-white hover:underline"
           >
-            Clear Logs
+            Clear logs
           </button>
         </div>
       </div>
@@ -793,89 +968,184 @@ export default function SetupWizard() {
   // ==========================================
 
   const renderIntro = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome to the Gulf Coast Mesh Wizard</h1>
-        <p className="text-gray-500 max-w-md mx-auto">
-          Choose the type of node you want to set up today.
+    <div className="space-y-8">
+      <div className="space-y-3 text-center">
+        <span className="eyebrow mx-auto">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />
+          Setup wizard
+        </span>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-balance text-ink-900 sm:text-4xl dark:text-white">
+          Get a node on the <span className="gradient-text">Gulf Coast mesh</span>.
+        </h1>
+        <p className="mx-auto max-w-md text-pretty text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+          Plug in over USB, flash MeshCore, and join the network — right from your browser. Pick what you&apos;re building today.
         </p>
       </div>
-      <div className="grid md:grid-cols-2 gap-4 mt-8">
-        <button onClick={() => goTo('client_explain')} className="group p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-blue-500 transition-all text-left">
-          <Smartphone size={28} className="text-blue-600 mb-4" />
-          <h3 className="text-xl font-semibold mb-1">Setup a Client</h3>
-          <p className="text-gray-500 text-sm">Personal gateway node.</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => goTo('client_explain')}
+          className="tile tile-accent group flex h-full flex-col items-start text-left"
+        >
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gulf-500/15 text-gulf-700 dark:text-gulf-300">
+            <Smartphone className="h-5 w-5" aria-hidden />
+          </span>
+          <h3 className="mt-5 font-display text-lg font-semibold text-ink-900 dark:text-white">Set up a client</h3>
+          <p className="mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+            Daily-carry MeshCore companion paired with your phone over Bluetooth.
+          </p>
         </button>
-        <button onClick={() => goTo('repeater_explain')} className="group p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-indigo-500 transition-all text-left">
-          <Wifi size={28} className="text-indigo-600 mb-4" />
-          <h3 className="text-xl font-semibold mb-1">Setup a Repeater</h3>
-          <p className="text-gray-500 text-sm">Network Repeater node.</p>
+        <button
+          type="button"
+          onClick={() => goTo('repeater_explain')}
+          className="tile tile-accent group flex h-full flex-col items-start text-left"
+        >
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-sand-400/20 text-sand-700 dark:text-sand-300">
+            <Wifi className="h-5 w-5" aria-hidden />
+          </span>
+          <h3 className="mt-5 font-display text-lg font-semibold text-ink-900 dark:text-white">Stand up a repeater</h3>
+          <p className="mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+            Backbone node — extends the mesh from a rooftop, tower, or high attic.
+          </p>
         </button>
       </div>
     </div>
   );
 
   const renderClientExplain = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
-      <button onClick={() => goTo('intro')} className="text-xs text-gray-400 flex items-center"><ChevronLeft size={14} /> Back</button>
-      <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-        <h2 className="text-2xl font-bold mb-3">Meshcore Clients</h2>
-        <p className="text-gray-600 text-sm mb-4">The client firmware enables your hardware to root packets through the decentralized LMESH network.</p>
+    <div className="space-y-6">
+      <BackButton to="intro" />
+      <div className="surface-strong relative overflow-hidden p-6 sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-gulf-400/15 blur-3xl" />
+        <span className="eyebrow">
+          <Smartphone className="h-3.5 w-3.5" aria-hidden />
+          MeshCore client
+        </span>
+        <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+          A radio you carry
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+          The client firmware turns your radio into a daily-carry MeshCore companion — paired with the MeshCore phone app
+          over Bluetooth so you can message neighbors on the mesh wherever you go.
+        </p>
       </div>
-      <div className="flex justify-end"><button onClick={() => goTo('client_select_device')} className="px-6 py-3 bg-blue-600 text-white rounded-xl">Next: Select Device</button></div>
+      <div className="flex justify-end">
+        <button type="button" onClick={() => goTo('client_select_device')} className="btn-primary">
+          Next: select device
+        </button>
+      </div>
     </div>
   );
 
   const renderClientSelectDevice = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
-      <button onClick={() => goTo('client_explain')} className="text-xs text-gray-400 flex items-center"><ChevronLeft size={14} /> Back</button>
-      <div className="grid grid-cols-2 gap-4">
-        {availableDevices.map((d) => (
-          <button key={d.id} onClick={() => d.supported && setSelectedDevice(d.id)} className={`p-6 rounded-xl border-2 transition-all relative ${!d.supported ? 'opacity-40 cursor-not-allowed' : selectedDevice === d.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'}`}>
-            {!d.supported && <span className="absolute top-2 right-2 text-[10px] bg-gray-200 px-1 rounded">SOON</span>}
-            <Cpu size={24} className="mb-2 mx-auto" strokeWidth={1.5} />
-            <span className="block text-center font-bold text-sm tracking-tight">{d.name}</span>
-          </button>
-        ))}
+    <div className="space-y-6">
+      <BackButton to="client_explain" />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        {availableDevices.map((d) => {
+          const isSelected = selectedDevice === d.id;
+          return (
+            <button
+              key={d.id}
+              type="button"
+              disabled={!d.supported}
+              onClick={() => setSelectedDevice(d.id)}
+              aria-pressed={isSelected}
+              className={
+                'group relative flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition disabled:cursor-not-allowed disabled:opacity-45 ' +
+                (isSelected
+                  ? 'border-gulf-500/60 bg-gulf-500/10 shadow-[0_0_0_1px_rgba(45,209,189,0.3)_inset]'
+                  : 'bg-white/60 hover:-translate-y-0.5 hover:border-gulf-400/50 dark:bg-white/5 ')
+              }
+              style={!isSelected ? { borderColor: 'rgb(var(--line) / 0.7)' } : undefined}
+            >
+              {!d.supported && (
+                <span className="absolute right-2 top-2 rounded-full border bg-white/70 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:border-white/10 dark:bg-white/5 dark:text-ink-400" style={{ borderColor: 'rgb(var(--line) / 0.6)' }}>
+                  Soon
+                </span>
+              )}
+              <span className={
+                'grid h-10 w-10 place-items-center rounded-xl ' +
+                (isSelected ? 'bg-gulf-500/20 text-gulf-700 dark:text-gulf-200' : 'bg-ink-700/5 text-ink-600 dark:bg-white/5 dark:text-ink-300')
+              }>
+                <Cpu className="h-5 w-5" strokeWidth={1.7} aria-hidden />
+              </span>
+              <span className="block font-display text-sm font-semibold text-ink-900 dark:text-white">{d.name}</span>
+            </button>
+          );
+        })}
       </div>
-      <div className="flex justify-end"><button onClick={() => goTo('client_connect')} disabled={!selectedDevice} className="px-8 py-3 bg-blue-600 disabled:bg-gray-200 text-white rounded-xl">Next: Connect</button></div>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => goTo('client_connect')}
+          disabled={!selectedDevice}
+          className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Next: connect
+        </button>
+      </div>
     </div>
   );
 
   const renderClientConnect = () => (
-    <div className="space-y-8 text-center py-4">
-      <button onClick={() => goTo('client_select_device')} className="absolute top-12 left-12 text-xs text-gray-400 flex items-center"><ChevronLeft size={14} /> Back</button>
-      <Usb size={48} className="mx-auto text-gray-400 mb-4" />
-      <h2 className="text-2xl font-bold">Connect your {selectedDevice}</h2>
-      <p className="text-gray-500 text-sm max-w-xs mx-auto">Plug in via USB and click below to unlock the serial port.</p>
+    <div className="space-y-6">
+      <BackButton to="client_select_device" />
+      <div className="text-center">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gulf-500/15 text-gulf-700 mx-auto dark:text-gulf-300">
+          <Usb className="h-6 w-6" aria-hidden />
+        </span>
+        <h2 className="mt-5 font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+          Connect your {selectedDevice || 'device'}
+        </h2>
+        <p className="mx-auto mt-2 max-w-xs text-sm text-ink-600 dark:text-ink-300">
+          Plug in via USB and click below to unlock the serial port.
+        </p>
+      </div>
       {renderCompatibilityWarning()}
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-5">
         {serialStatus !== 'connected' ? (
           <button
+            type="button"
             onClick={handleConnectSerial}
             disabled={!serialAvailable}
-            className="px-10 py-4 bg-blue-600 disabled:bg-gray-300 disabled:shadow-none text-white rounded-2xl font-bold shadow-lg shadow-blue-200 flex items-center gap-2"
+            className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {serialStatus === 'connecting' ? <Loader2 className="animate-spin" /> : <Usb size={20} />}
-            SELECT SERIAL PORT
+            {serialStatus === 'connecting' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Usb className="h-4 w-4" aria-hidden />}
+            Select serial port
           </button>
         ) : (
-          <div className="space-y-6 w-full">
-            <div className="bg-green-50 text-green-700 px-4 py-2 rounded-full text-xs font-bold border border-green-200 inline-flex items-center gap-2">
-              <CheckCircle size={14} /> READY TO FLASH
-            </div>
-            <div className="flex justify-center gap-4">
-              <button disabled={isProcessing} onClick={handleSendTestPacket} className="p-3 bg-amber-100 text-amber-700 rounded-xl hover:bg-amber-200 transition-colors disabled:opacity-50"><Zap size={20} /></button>
-              <button disabled={isProcessing} onClick={handleFlashReal} className="px-12 py-4 bg-gray-900 text-white rounded-2xl font-bold tracking-widest hover:scale-[1.02] transition-transform disabled:bg-gray-400">
-                {isProcessing ? "INITIALIZING..." : "START FLASHING"}
+          <div className="w-full space-y-5 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-gulf-500/30 bg-gulf-500/10 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-gulf-700 dark:text-gulf-200">
+              <CheckCircle className="h-3.5 w-3.5" aria-hidden />
+              Ready to flash
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={handleSendTestPacket}
+                className="grid h-11 w-11 place-items-center rounded-2xl border bg-sand-400/10 text-sand-700 transition hover:bg-sand-400/20 disabled:opacity-50 dark:text-sand-300"
+                style={{ borderColor: 'rgb(var(--line) / 0.7)' }}
+                aria-label="Send test packet"
+              >
+                <Zap className="h-5 w-5" aria-hidden />
+              </button>
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={handleFlashReal}
+                className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isProcessing ? 'Initializing…' : 'Start flashing'}
               </button>
             </div>
             <button
+              type="button"
               disabled={isProcessing}
               onClick={() => handleDebugBypassFlash('client')}
-              className="mx-auto block text-xs text-blue-700 font-bold underline disabled:opacity-40"
+              className="mx-auto block font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500 underline-offset-4 transition hover:text-gulf-700 hover:underline disabled:opacity-40 dark:text-ink-400 dark:hover:text-gulf-300"
             >
-              DEBUG: SKIP FLASH
+              Debug: skip flash
             </button>
           </div>
         )}
@@ -884,184 +1154,316 @@ export default function SetupWizard() {
   );
 
   const renderClientFlashing = () => (
-    <div className="space-y-8 text-center py-10">
-      <div className="relative mx-auto w-32 h-32">
-        <svg className="w-full h-full transform -rotate-90">
-          <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-100" />
-          <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray="364.4" strokeDashoffset={364.4 - (364.4 * flashProgress) / 100} className="text-blue-600 transition-all duration-300" strokeLinecap="round" />
+    <div className="space-y-8 py-6 text-center">
+      <div className="relative mx-auto h-32 w-32">
+        <svg className="h-full w-full -rotate-90">
+          <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-ink-200/60 dark:text-white/10" />
+          <circle
+            cx="64"
+            cy="64"
+            r="58"
+            stroke="currentColor"
+            strokeWidth="8"
+            fill="transparent"
+            strokeDasharray="364.4"
+            strokeDashoffset={364.4 - (364.4 * flashProgress) / 100}
+            className="text-gulf-500 transition-all duration-300"
+            strokeLinecap="round"
+          />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-black text-gray-900">{Math.round(flashProgress)}%</span>
+          <span className="font-display text-3xl font-semibold text-ink-900 dark:text-white">
+            {Math.round(flashProgress)}%
+          </span>
         </div>
       </div>
       <div>
-        <h2 className="text-2xl font-bold mb-1">Writing Firmware</h2>
-        <p className="text-gray-400 text-sm">Injecting Meshcore Client to ESP32...</p>
+        <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+          Writing firmware
+        </h2>
+        <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">Injecting MeshCore client to ESP32…</p>
       </div>
-      <button onClick={() => setShowTerminal(true)} className="flex items-center gap-2 mx-auto text-xs text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-lg"><TerminalIcon size={14} /> SHOW LIVE TERMINAL</button>
+      <button
+        type="button"
+        onClick={() => setShowTerminal(true)}
+        className="mx-auto inline-flex items-center gap-2 rounded-full border border-gulf-500/30 bg-gulf-500/10 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-gulf-700 transition hover:bg-gulf-500/20 dark:text-gulf-200"
+      >
+        <TerminalIcon className="h-3.5 w-3.5" aria-hidden /> Show live terminal
+      </button>
     </div>
   );
 
   const renderClientError = () => (
-    <div className="space-y-8 text-center py-10 animate-in fade-in zoom-in duration-300">
-      <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto"><AlertTriangle size={40} /></div>
+    <div className="space-y-8 py-6 text-center">
+      <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-coral-500/15 text-coral-500">
+        <AlertTriangle className="h-10 w-10" aria-hidden />
+      </div>
       <div>
-        <h2 className="text-2xl font-bold text-red-900">Flashing Failed</h2>
-        <p className="text-gray-500 text-sm mt-2 max-w-xs mx-auto">
-          {errorMsg || "An unexpected error occurred during the transfer."}
+        <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+          Flashing failed
+        </h2>
+        <p className="mx-auto mt-2 max-w-xs text-sm text-ink-600 dark:text-ink-300">
+          {errorMsg || 'An unexpected error occurred during the transfer.'}
         </p>
       </div>
-      <div className="flex flex-col gap-3 max-w-xs mx-auto">
-        <button onClick={() => goTo('client_connect')} className="px-10 py-4 bg-gray-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2">
-          <RefreshCw size={18} /> TRY AGAIN
+      <div className="mx-auto flex max-w-xs flex-col gap-3">
+        <button type="button" onClick={() => goTo('client_connect')} className="btn-primary">
+          <RefreshCw className="h-4 w-4" aria-hidden /> Try again
         </button>
-        <button onClick={() => setShowTerminal(true)} className="text-xs text-blue-600 font-bold">VIEW DETAILED LOGS</button>
+        <button
+          type="button"
+          onClick={() => setShowTerminal(true)}
+          className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-gulf-700 transition hover:underline dark:text-gulf-300"
+        >
+          View detailed logs
+        </button>
       </div>
     </div>
   );
 
   const renderClientRestart = () => (
-    <div className="space-y-8 text-center py-10">
-      <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto"><CheckCircle size={40} /></div>
-      <h2 className="text-2xl font-bold">Flashing Successful!</h2>
-      <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-left max-w-sm mx-auto">
-        <p className="text-xs text-blue-500 uppercase font-black mb-2">Bluetooth Ready</p>
-        <p className="text-sm text-blue-900 leading-relaxed">
-          Your device is now running Bluetooth firmware. Download and install the MeshCore app,
-          then connect to this device over Bluetooth.
+    <div className="space-y-7 py-6 text-center">
+      <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-gulf-500/15 text-gulf-700 dark:text-gulf-300">
+        <CheckCircle className="h-10 w-10" aria-hidden />
+      </div>
+      <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+        Flashing successful
+      </h2>
+      <div className="surface mx-auto max-w-sm p-6 text-left">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-gulf-700 dark:text-gulf-300">
+          Bluetooth ready
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-ink-700 dark:text-ink-200">
+          Your device is now running MeshCore companion firmware. Install the MeshCore app, then connect to this device
+          over Bluetooth to finish setup.
         </p>
       </div>
-      <button onClick={() => { setStep('intro'); setSerialStatus('disconnected'); portRef.current = null; }} className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200">SETUP ANOTHER NODE</button>
+      <button
+        type="button"
+        onClick={() => {
+          setStep('intro');
+          setSerialStatus('disconnected');
+          portRef.current = null;
+        }}
+        className="btn-primary"
+      >
+        Set up another node
+      </button>
     </div>
   );
 
-  const renderClientName = () => (
-    <div className="space-y-6 max-w-xs mx-auto">
-      <h2 className="text-2xl font-bold text-center">Name your node</h2>
-      <input type="text" value={deviceName} onChange={e => setDeviceName(e.target.value)} placeholder="e.g. Ghost-1" className="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-blue-600 outline-none transition-colors" />
-      <button onClick={() => goTo('client_ready')} disabled={!deviceName} className="w-full py-4 bg-gray-900 disabled:bg-gray-200 text-white rounded-xl font-bold">FINISH SETUP</button>
-    </div>
-  );
-
-  const renderClientReady = () => (
-    <div className="text-center py-10 space-y-6">
-      <div className="w-24 h-24 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-green-200"><CheckCircle size={48} /></div>
-      <h2 className="text-3xl font-black">All Systems Go.</h2>
-      <p className="text-gray-500">Your client <span className="text-gray-900 font-bold">{deviceName}</span> is now part of the mesh.</p>
-      <button onClick={() => { setStep('intro'); setSerialStatus('disconnected'); portRef.current = null; }} className="text-blue-600 font-bold pt-10">SETUP ANOTHER NODE</button>
-    </div>
-  );
-
-  // REPEATER FLOW (SAME LOGIC, DIFFERENT COLORS)
+  // REPEATER FLOW
   const renderRepeaterExplain = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
-      <button onClick={() => goTo('intro')} className="text-xs text-gray-400 flex items-center"><ChevronLeft size={14} /> Back</button>
-      <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
-        <h2 className="text-2xl font-bold mb-3">Meshcore Repeaters</h2>
-        <p className="text-gray-600 text-sm mb-4">Repeater nodes that skip packets across the state. Higher placement equals better range.</p>
+    <div className="space-y-6">
+      <BackButton to="intro" />
+      <div className="surface-strong relative overflow-hidden p-6 sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-sand-400/20 blur-3xl" />
+        <span className="eyebrow">
+          <Wifi className="h-3.5 w-3.5" aria-hidden />
+          MeshCore repeater
+        </span>
+        <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+          A backbone node
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+          Repeaters relay packets across the coast. Higher placement equals better range — rooftops, towers, and tall
+          attics carry the network for everyone else.
+        </p>
       </div>
-      <div className="flex justify-end"><button onClick={() => goTo('repeater_select_device')} className="px-6 py-3 bg-indigo-600 text-white rounded-xl">Next: Select Device</button></div>
+      <div className="flex justify-end">
+        <button type="button" onClick={() => goTo('repeater_select_device')} className="btn-primary">
+          Next: select device
+        </button>
+      </div>
     </div>
   );
 
   const renderRepeaterSelectDevice = () => (
     <div className="space-y-6">
-      <button onClick={() => goTo('repeater_explain')} className="text-xs text-gray-400 flex items-center"><ChevronLeft size={14} /> Back</button>
-      <div className="grid grid-cols-2 gap-4">
-        {availableDevices.map((d) => (
-          <button key={d.id} onClick={() => d.supported && setSelectedDevice(d.id)} className={`p-6 rounded-xl border-2 transition-all relative ${!d.supported ? 'opacity-40 cursor-not-allowed' : selectedDevice === d.id ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
-            {!d.supported && <span className="absolute top-2 right-2 text-[10px] bg-gray-200 px-1 rounded">SOON</span>}
-            <Cpu size={24} className="mb-2 mx-auto" strokeWidth={1.5} />
-            <span className="block text-center font-bold text-sm tracking-tight">{d.name}</span>
-          </button>
-        ))}
+      <BackButton to="repeater_explain" />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        {availableDevices.map((d) => {
+          const isSelected = selectedDevice === d.id;
+          return (
+            <button
+              key={d.id}
+              type="button"
+              disabled={!d.supported}
+              onClick={() => setSelectedDevice(d.id)}
+              aria-pressed={isSelected}
+              className={
+                'group relative flex flex-col items-center gap-2 rounded-2xl border p-5 text-center transition disabled:cursor-not-allowed disabled:opacity-45 ' +
+                (isSelected
+                  ? 'border-sand-400/60 bg-sand-400/10 shadow-[0_0_0_1px_rgba(249,162,40,0.3)_inset]'
+                  : 'bg-white/60 hover:-translate-y-0.5 hover:border-sand-400/50 dark:bg-white/5 ')
+              }
+              style={!isSelected ? { borderColor: 'rgb(var(--line) / 0.7)' } : undefined}
+            >
+              {!d.supported && (
+                <span className="absolute right-2 top-2 rounded-full border bg-white/70 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:border-white/10 dark:bg-white/5 dark:text-ink-400" style={{ borderColor: 'rgb(var(--line) / 0.6)' }}>
+                  Soon
+                </span>
+              )}
+              <span className={
+                'grid h-10 w-10 place-items-center rounded-xl ' +
+                (isSelected ? 'bg-sand-400/25 text-sand-700 dark:text-sand-200' : 'bg-ink-700/5 text-ink-600 dark:bg-white/5 dark:text-ink-300')
+              }>
+                <Cpu className="h-5 w-5" strokeWidth={1.7} aria-hidden />
+              </span>
+              <span className="block font-display text-sm font-semibold text-ink-900 dark:text-white">{d.name}</span>
+            </button>
+          );
+        })}
       </div>
-      <div className="flex justify-end"><button onClick={() => goTo('repeater_connect')} disabled={!selectedDevice} className="px-8 py-3 bg-indigo-600 disabled:bg-gray-200 text-white rounded-xl">Next: Connect</button></div>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => goTo('repeater_connect')}
+          disabled={!selectedDevice}
+          className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Next: connect
+        </button>
+      </div>
     </div>
   );
 
   const renderRepeaterConnect = () => (
-    <div className="space-y-8 text-center py-4">
-      <button onClick={() => goTo('repeater_select_device')} className="absolute top-12 left-12 text-xs text-gray-400 flex items-center"><ChevronLeft size={14} /> Back</button>
-      <Usb size={48} className="mx-auto text-gray-400 mb-4" />
-      <h2 className="text-2xl font-bold">Connect Repeater</h2>
+    <div className="space-y-6">
+      <BackButton to="repeater_select_device" />
+      <div className="text-center">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-sand-400/20 text-sand-700 mx-auto dark:text-sand-300">
+          <Usb className="h-6 w-6" aria-hidden />
+        </span>
+        <h2 className="mt-5 font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+          Connect repeater
+        </h2>
+      </div>
       {renderCompatibilityWarning()}
-      {serialStatus !== 'connected' ? (
-        <button
-          onClick={handleConnectSerial}
-          disabled={!serialAvailable}
-          className="px-10 py-4 bg-indigo-600 disabled:bg-gray-300 disabled:shadow-none text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 flex items-center gap-2 mx-auto"
-        >
-          {serialStatus === 'connecting' ? <Loader2 className="animate-spin" /> : <Usb size={20} />}
-          SELECT SERIAL PORT
-        </button>
-      ) : (
-        <div className="space-y-6 w-full">
-          <div className="bg-green-50 text-green-700 px-4 py-2 rounded-full text-xs font-bold border border-green-200 inline-flex items-center gap-2">
-            <CheckCircle size={14} /> LINK STABLE
-          </div>
-          <div className="flex justify-center gap-4">
-            <button disabled={isProcessing} onClick={handleSendTestPacket} className="p-3 bg-amber-100 text-amber-700 rounded-xl hover:bg-amber-200 transition-colors disabled:opacity-50"><Zap size={20} /></button>
-            <button disabled={isProcessing} onClick={handleFlashReal} className="px-12 py-4 bg-gray-900 text-white rounded-2xl font-bold tracking-widest disabled:bg-gray-400">
-              {isProcessing ? "PREPARING..." : "START FLASHING"}
+      <div className="flex flex-col items-center gap-5">
+        {serialStatus !== 'connected' ? (
+          <button
+            type="button"
+            onClick={handleConnectSerial}
+            disabled={!serialAvailable}
+            className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {serialStatus === 'connecting' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Usb className="h-4 w-4" aria-hidden />}
+            Select serial port
+          </button>
+        ) : (
+          <div className="w-full space-y-5 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-gulf-500/30 bg-gulf-500/10 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-gulf-700 dark:text-gulf-200">
+              <CheckCircle className="h-3.5 w-3.5" aria-hidden />
+              Link stable
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={handleSendTestPacket}
+                className="grid h-11 w-11 place-items-center rounded-2xl border bg-sand-400/10 text-sand-700 transition hover:bg-sand-400/20 disabled:opacity-50 dark:text-sand-300"
+                style={{ borderColor: 'rgb(var(--line) / 0.7)' }}
+                aria-label="Send test packet"
+              >
+                <Zap className="h-5 w-5" aria-hidden />
+              </button>
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={handleFlashReal}
+                className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isProcessing ? 'Preparing…' : 'Start flashing'}
+              </button>
+            </div>
+            <button
+              type="button"
+              disabled={isProcessing}
+              onClick={() => handleDebugBypassFlash('repeater')}
+              className="mx-auto block font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500 underline-offset-4 transition hover:text-sand-700 hover:underline disabled:opacity-40 dark:text-ink-400 dark:hover:text-sand-300"
+            >
+              Debug: skip flash
             </button>
           </div>
-          <button
-            disabled={isProcessing}
-            onClick={() => handleDebugBypassFlash('repeater')}
-            className="mx-auto block text-xs text-indigo-700 font-bold underline disabled:opacity-40"
-          >
-            DEBUG: SKIP FLASH
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
   const renderRepeaterFlashing = () => (
-    <div className="space-y-8 text-center py-10">
-      <div className="relative mx-auto w-32 h-32">
-        <svg className="w-full h-full transform -rotate-90">
-          <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-gray-100" />
-          <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray="364.4" strokeDashoffset={364.4 - (364.4 * flashProgress) / 100} className="text-indigo-600 transition-all duration-300" strokeLinecap="round" />
+    <div className="space-y-8 py-6 text-center">
+      <div className="relative mx-auto h-32 w-32">
+        <svg className="h-full w-full -rotate-90">
+          <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-ink-200/60 dark:text-white/10" />
+          <circle
+            cx="64"
+            cy="64"
+            r="58"
+            stroke="currentColor"
+            strokeWidth="8"
+            fill="transparent"
+            strokeDasharray="364.4"
+            strokeDashoffset={364.4 - (364.4 * flashProgress) / 100}
+            className="text-sand-500 transition-all duration-300"
+            strokeLinecap="round"
+          />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-2xl font-black text-gray-900">{Math.round(flashProgress)}%</span>
+          <span className="font-display text-3xl font-semibold text-ink-900 dark:text-white">
+            {Math.round(flashProgress)}%
+          </span>
         </div>
       </div>
       <div>
-        <h2 className="text-2xl font-bold mb-1">Writing Repeater Firmware</h2>
-        <p className="text-gray-400 text-sm">Streaming packets to ESP32...</p>
+        <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+          Writing repeater firmware
+        </h2>
+        <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">Streaming packets to ESP32…</p>
       </div>
-      <button onClick={() => setShowTerminal(true)} className="flex items-center gap-2 mx-auto text-xs text-indigo-600 font-bold bg-indigo-50 px-4 py-2 rounded-lg"><TerminalIcon size={14} /> SHOW LIVE TERMINAL</button>
+      <button
+        type="button"
+        onClick={() => setShowTerminal(true)}
+        className="mx-auto inline-flex items-center gap-2 rounded-full border border-sand-400/40 bg-sand-400/10 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-sand-700 transition hover:bg-sand-400/20 dark:text-sand-200"
+      >
+        <TerminalIcon className="h-3.5 w-3.5" aria-hidden /> Show live terminal
+      </button>
     </div>
   );
 
-  // ... (Other repeater steps omitted for brevity, logic follows client structure but with repeater theme/config)
   const renderRepeaterRestart = () => (
-    <div className="space-y-8 text-center py-10">
-      <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto animate-in zoom-in duration-500"><CheckCircle size={40} /></div>
-      <h2 className="text-2xl font-bold">Repeater Ready</h2>
-      <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 text-left max-w-sm mx-auto">
-        <p className="text-xs text-gray-400 uppercase font-black mb-2">Hard Reset Required</p>
-        <ul className="text-sm text-gray-600 space-y-2">
-          <li className="flex gap-2"><span>1.</span> Unplug USB cable</li>
-          <li className="flex gap-2"><span>2.</span> Wait 2 seconds</li>
-          <li className="flex gap-2"><span>3.</span> Re-insert USB cable</li>
-        </ul>
+    <div className="space-y-7 py-6 text-center">
+      <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-gulf-500/15 text-gulf-700 dark:text-gulf-300">
+        <CheckCircle className="h-10 w-10" aria-hidden />
+      </div>
+      <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+        Repeater ready
+      </h2>
+      <div className="surface mx-auto max-w-sm p-6 text-left">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-sand-700 dark:text-sand-300">
+          Hard reset required
+        </p>
+        <ol className="mt-3 space-y-2 text-sm text-ink-700 dark:text-ink-200">
+          <li className="flex gap-2"><span className="font-mono text-ink-400">1.</span> Unplug USB cable</li>
+          <li className="flex gap-2"><span className="font-mono text-ink-400">2.</span> Wait two seconds</li>
+          <li className="flex gap-2"><span className="font-mono text-ink-400">3.</span> Re-insert USB cable</li>
+        </ol>
       </div>
       <div className="flex flex-col items-center gap-4">
         {serialStatus !== 'connected' ? (
           <button
+            type="button"
             onClick={handleConnectSerial}
             disabled={!serialAvailable}
-            className="px-10 py-4 bg-indigo-600 disabled:bg-gray-300 disabled:shadow-none text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 flex items-center gap-2"
+            className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <RefreshCw size={20} className={serialStatus === 'connecting' ? 'animate-spin' : ''} />
-            RECONNECT DEVICE
+            <RefreshCw className={'h-4 w-4 ' + (serialStatus === 'connecting' ? 'animate-spin' : '')} aria-hidden />
+            Reconnect device
           </button>
         ) : (
-          <button onClick={() => goTo('repeater_config')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold animate-in fade-in scale-in-95 duration-300">CONFIGURE LOCATION</button>
+          <button type="button" onClick={() => goTo('repeater_config')} className="btn-primary">
+            Configure location
+          </button>
         )}
       </div>
     </div>
@@ -1233,8 +1635,8 @@ export default function SetupWizard() {
         role="button"
         tabIndex={0}
         aria-label="Select repeater location on real map"
-        className={`${expanded ? 'h-[70vh]' : 'h-56'} w-full bg-slate-200 relative rounded-xl border-2 border-emerald-200 overflow-hidden ${isMapDragging ? 'cursor-grabbing' : 'cursor-grab'} touch-none select-none overscroll-contain focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-        style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+        className={`${expanded ? 'h-[70vh]' : 'h-64'} relative w-full overflow-hidden rounded-2xl border bg-ink-200 ${isMapDragging ? 'cursor-grabbing' : 'cursor-grab'} touch-none select-none overscroll-contain focus:outline-none focus:ring-2 focus:ring-gulf-400 dark:bg-ink-900`}
+        style={{ borderColor: 'rgb(var(--line) / 0.7)', userSelect: 'none', WebkitUserSelect: 'none' }}
       >
         {getMapTiles(expanded).map((tile) => (
           // eslint-disable-next-line @next/next/no-img-element
@@ -1247,10 +1649,10 @@ export default function SetupWizard() {
             style={{ left: `calc(50% + ${tile.left}px)`, top: `calc(50% + ${tile.top}px)` }}
           />
         ))}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-black/10" />
-        <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-slate-700 shadow-sm">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-ink-950/10" />
+        <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/95 px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-700 shadow-sm dark:bg-ink-900/90 dark:text-ink-100">
           OpenStreetMap
-        </div>
+        </span>
         {!expanded && (
           <button
             type="button"
@@ -1259,18 +1661,19 @@ export default function SetupWizard() {
               if (repeaterConfig.locationSet) setMapCenter({ lat: repeaterConfig.lat, lon: repeaterConfig.lon });
               setShowMapModal(true);
             }}
-          className="absolute right-3 top-3 rounded-full bg-white/95 p-2 text-indigo-700 shadow-sm hover:bg-white"
+            className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/95 text-gulf-700 shadow-sm transition hover:bg-white dark:bg-ink-900/90 dark:text-gulf-300"
             aria-label="Maximize map"
           >
-            <Maximize2 size={15} />
+            <Maximize2 className="h-4 w-4" aria-hidden />
           </button>
         )}
-        <div className="absolute right-3 top-14 flex flex-col overflow-hidden rounded-xl bg-white/95 shadow-sm">
+        <div className="absolute right-3 top-14 flex flex-col overflow-hidden rounded-xl bg-white/95 shadow-sm dark:bg-ink-900/90">
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => setMapZoom((zoom) => clampMapZoom(zoom + 1))}
-            className="px-3 py-2 text-sm font-black text-slate-700 hover:bg-slate-100"
+            className="px-3 py-2 font-mono text-sm font-semibold text-ink-800 transition hover:bg-ink-100 dark:text-ink-100 dark:hover:bg-white/5"
+            aria-label="Zoom in"
           >
             +
           </button>
@@ -1278,117 +1681,215 @@ export default function SetupWizard() {
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => setMapZoom((zoom) => clampMapZoom(zoom - 1))}
-            className="border-t px-3 py-2 text-sm font-black text-slate-700 hover:bg-slate-100"
+            className="border-t border-ink-200/60 px-3 py-2 font-mono text-sm font-semibold text-ink-800 transition hover:bg-ink-100 dark:border-white/10 dark:text-ink-100 dark:hover:bg-white/5"
+            aria-label="Zoom out"
           >
-            -
+            −
           </button>
         </div>
-        <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-slate-600 shadow-sm">
-          Drag to pan, scroll or +/- to zoom, click to place
-        </div>
+        <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/95 px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-600 shadow-sm dark:bg-ink-900/90 dark:text-ink-300">
+          Drag to pan · scroll or +/− to zoom · click to place
+        </span>
         {repeaterConfig.locationSet && (
           <MapPin
             size={expanded ? 38 : 30}
-            className="pointer-events-none text-indigo-700 absolute z-10 drop-shadow-md"
+            className="pointer-events-none absolute z-10 text-coral-500 drop-shadow-md"
             style={{ left: `calc(50% + ${pinLeft}px)`, top: `calc(50% + ${pinTop}px)`, transform: 'translate(-50%, -100%)' }}
           />
         )}
-        {!repeaterConfig.locationSet && <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-[11px] font-bold text-slate-700">CLICK MAP TO PIN REPEATER LOCATION</div>}
+        {!repeaterConfig.locationSet && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-700 dark:text-ink-100">
+            Click map to pin repeater location
+          </div>
+        )}
       </div>
     );
   };
 
-  const renderRepeaterConfig = () => (
-    <div className="space-y-4 max-w-sm mx-auto overflow-y-auto px-2 max-h-[70vh]">
-      <h2 className="text-xl font-bold text-center">Node Config</h2>
-      <input type="text" value={repeaterConfig.name} onChange={e => setRepeaterConfig({ ...repeaterConfig, name: e.target.value })} placeholder="Node Name" className="w-full p-3 rounded-lg border" />
-      {renderRepeaterLocationMap()}
-      {repeaterConfig.locationSet && (
-        <div className="grid grid-cols-2 gap-2">
-          <label className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
-            Latitude
-            <input
-              type="number"
-              step="0.000001"
-              value={repeaterConfig.lat.toFixed(6)}
-              onChange={(e) => handleCoordinateChange('lat', e.target.value)}
-              className="mt-1 w-full rounded-lg border p-2 text-sm font-normal text-gray-900"
-            />
-          </label>
-          <label className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
-            Longitude
-            <input
-              type="number"
-              step="0.000001"
-              value={repeaterConfig.lon.toFixed(6)}
-              onChange={(e) => handleCoordinateChange('lon', e.target.value)}
-              className="mt-1 w-full rounded-lg border p-2 text-sm font-normal text-gray-900"
-            />
-          </label>
-        </div>
-      )}
-      <div className="grid grid-cols-2 gap-2">
-        <input type="number" value={repeaterConfig.height} onChange={e => setRepeaterConfig({ ...repeaterConfig, height: e.target.value })} placeholder="Height (ft)" className="w-full p-3 rounded-lg border text-sm" />
-        <input type="email" value={repeaterConfig.email} onChange={e => setRepeaterConfig({ ...repeaterConfig, email: e.target.value })} placeholder="Contact Email" className="w-full p-3 rounded-lg border text-sm" />
-      </div>
-      <input type="password" value={repeaterConfig.password} onChange={e => setRepeaterConfig({ ...repeaterConfig, password: e.target.value })} placeholder="Admin Password" className="w-full p-3 rounded-lg border" />
-      <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-[11px] text-indigo-700">
-        Repeater radio profile will be set over serial to US defaults with SF9 / CR7.
-      </div>
-      {isProcessing && settingsProgress.total > 0 && (
-        <div className="rounded-xl border border-indigo-100 bg-white p-3 shadow-sm">
-          <div className="flex items-center justify-between text-[11px] font-bold text-indigo-700">
-            <span>{settingsProgress.label || "Sending settings"}</span>
-            <span>{Math.round((settingsProgress.current / settingsProgress.total) * 100)}%</span>
-          </div>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-indigo-100">
-            <div
-              className="h-full rounded-full bg-indigo-600 transition-all duration-300"
-              style={{ width: `${(settingsProgress.current / settingsProgress.total) * 100}%` }}
-            />
-          </div>
-          <p className="mt-2 text-[10px] text-gray-500">
-            Step {settingsProgress.current} of {settingsProgress.total}
+  const renderRepeaterConfig = () => {
+    const inputClass =
+      'w-full rounded-xl border bg-white/80 px-3 py-3 text-sm text-ink-900 placeholder:text-ink-400 outline-none transition focus:border-gulf-400 focus:ring-2 focus:ring-gulf-400/40 dark:bg-ink-900/60 dark:text-white dark:placeholder:text-ink-500';
+    const inputBorder = { borderColor: 'rgb(var(--line) / 0.7)' };
+    return (
+      <div className="space-y-5">
+        <div className="text-center">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+            Node config
+          </h2>
+          <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
+            These settings get pushed over serial when you join the mesh.
           </p>
         </div>
-      )}
-      {serialStatus !== 'connected' && (
-        <p className="text-[11px] text-amber-600">Reconnect serial on the previous step before joining mesh.</p>
-      )}
-      <button
-        onClick={handleApplyRepeaterConfig}
-        disabled={isProcessing || serialStatus !== 'connected'}
-        className="w-full py-4 bg-gray-900 text-white rounded-xl font-bold mt-2 disabled:bg-gray-300"
-      >
-        {isProcessing ? "APPLYING SERIAL SETTINGS..." : "JOIN MESH"}
-      </button>
-      <button onClick={() => setShowTerminal(true)} className="w-full py-2 text-xs text-indigo-700 font-bold">OPEN SERIAL LOGS</button>
-    </div>
-  );
+
+        <input
+          type="text"
+          value={repeaterConfig.name}
+          onChange={(e) => setRepeaterConfig({ ...repeaterConfig, name: e.target.value })}
+          placeholder="Node name"
+          className={inputClass}
+          style={inputBorder}
+        />
+
+        {renderRepeaterLocationMap()}
+
+        {repeaterConfig.locationSet && (
+          <div className="grid grid-cols-2 gap-3">
+            <label className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
+              Latitude
+              <input
+                type="number"
+                step="0.000001"
+                value={repeaterConfig.lat.toFixed(6)}
+                onChange={(e) => handleCoordinateChange('lat', e.target.value)}
+                className={`mt-1 ${inputClass}`}
+                style={inputBorder}
+              />
+            </label>
+            <label className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
+              Longitude
+              <input
+                type="number"
+                step="0.000001"
+                value={repeaterConfig.lon.toFixed(6)}
+                onChange={(e) => handleCoordinateChange('lon', e.target.value)}
+                className={`mt-1 ${inputClass}`}
+                style={inputBorder}
+              />
+            </label>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="number"
+            value={repeaterConfig.height}
+            onChange={(e) => setRepeaterConfig({ ...repeaterConfig, height: e.target.value })}
+            placeholder="Height (ft)"
+            className={inputClass}
+            style={inputBorder}
+          />
+          <input
+            type="email"
+            value={repeaterConfig.email}
+            onChange={(e) => setRepeaterConfig({ ...repeaterConfig, email: e.target.value })}
+            placeholder="Contact email"
+            className={inputClass}
+            style={inputBorder}
+          />
+        </div>
+
+        <input
+          type="password"
+          value={repeaterConfig.password}
+          onChange={(e) => setRepeaterConfig({ ...repeaterConfig, password: e.target.value })}
+          placeholder="Admin password"
+          className={inputClass}
+          style={inputBorder}
+        />
+
+        <div className="rounded-2xl border border-gulf-500/30 bg-gulf-500/10 px-4 py-3 text-[11px] leading-relaxed text-ink-700 dark:text-ink-200">
+          Radio profile will be set to the Gulf Coast US defaults — <code className="kbd">910.525 MHz</code> ·{' '}
+          <code className="kbd">62.5 kHz</code> · <code className="kbd">SF9</code> · <code className="kbd">CR7</code>.
+        </div>
+
+        {isProcessing && settingsProgress.total > 0 && (
+          <div className="surface p-4">
+            <div className="flex items-center justify-between font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-gulf-700 dark:text-gulf-300">
+              <span>{settingsProgress.label || 'Sending settings'}</span>
+              <span>{Math.round((settingsProgress.current / settingsProgress.total) * 100)}%</span>
+            </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink-200/60 dark:bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-gulf-400 to-gulf-600 transition-all duration-300"
+                style={{ width: `${(settingsProgress.current / settingsProgress.total) * 100}%` }}
+              />
+            </div>
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
+              Step {settingsProgress.current} of {settingsProgress.total}
+            </p>
+          </div>
+        )}
+
+        {serialStatus !== 'connected' && (
+          <p className="rounded-xl border border-sand-400/40 bg-sand-400/10 px-3 py-2 text-[11px] text-sand-700 dark:text-sand-300">
+            Reconnect serial on the previous step before joining the mesh.
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={handleApplyRepeaterConfig}
+          disabled={isProcessing || serialStatus !== 'connected'}
+          className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isProcessing ? 'Applying serial settings…' : 'Join the mesh'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowTerminal(true)}
+          className="block w-full text-center font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-gulf-700 transition hover:underline dark:text-gulf-300"
+        >
+          Open serial logs
+        </button>
+      </div>
+    );
+  };
 
   const renderRepeaterReady = () => (
-    <div className="text-center py-10 space-y-6">
-      <div className="w-24 h-24 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-indigo-100"><Wifi size={48} /></div>
-      <h2 className="text-3xl font-black">Node Streaming.</h2>
-      <p className="text-gray-500">Repeater node <span className="text-gray-900 font-bold">{repeaterConfig.name}</span> is live.</p>
-      <button onClick={() => { setStep('intro'); setSerialStatus('disconnected'); portRef.current = null; }} className="text-indigo-600 font-bold pt-10">DASHBOARD</button>
+    <div className="space-y-6 py-6 text-center">
+      <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-gradient-to-br from-gulf-400 via-gulf-500 to-sand-400 text-ink-950 shadow-glow">
+        <Wifi className="h-12 w-12" aria-hidden />
+      </div>
+      <h2 className="font-display text-3xl font-semibold tracking-tight text-ink-900 dark:text-white">
+        Node streaming
+      </h2>
+      <p className="text-sm text-ink-600 dark:text-ink-300">
+        Repeater <span className="font-semibold text-ink-900 dark:text-white">{repeaterConfig.name || 'node'}</span> is
+        live on the Gulf Coast mesh.
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <button
+          type="button"
+          onClick={() => {
+            setStep('intro');
+            setSerialStatus('disconnected');
+            portRef.current = null;
+          }}
+          className="btn-primary"
+        >
+          Set up another node
+        </button>
+        <Link href="/meshmap" className="btn-ghost">
+          Open live maps
+        </Link>
+      </div>
     </div>
   );
 
   const renderRepeaterError = () => (
-    <div className="space-y-8 text-center py-10 animate-in fade-in zoom-in duration-300">
-      <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto"><AlertTriangle size={40} /></div>
+    <div className="space-y-7 py-6 text-center">
+      <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-coral-500/15 text-coral-500">
+        <AlertTriangle className="h-10 w-10" aria-hidden />
+      </div>
       <div>
-        <h2 className="text-2xl font-bold text-red-900">Repeater Error</h2>
-        <p className="text-gray-500 text-sm mt-2 max-w-xs mx-auto">
-          {errorMsg || "Failed to inject Repeater OS into the controller."}
+        <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
+          Repeater error
+        </h2>
+        <p className="mx-auto mt-2 max-w-xs text-sm text-ink-600 dark:text-ink-300">
+          {errorMsg || 'Failed to inject repeater firmware into the controller.'}
         </p>
       </div>
-      <div className="flex flex-col gap-3 max-w-xs mx-auto">
-        <button onClick={() => goTo('repeater_connect')} className="px-10 py-4 bg-gray-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2">
-          <RefreshCw size={18} /> RETRY INJECTION
+      <div className="mx-auto flex max-w-xs flex-col gap-3">
+        <button type="button" onClick={() => goTo('repeater_connect')} className="btn-primary">
+          <RefreshCw className="h-4 w-4" aria-hidden /> Retry injection
         </button>
-        <button onClick={() => setShowTerminal(true)} className="text-xs text-indigo-600 font-bold">OPEN DEBUG CONSOLE</button>
+        <button
+          type="button"
+          onClick={() => setShowTerminal(true)}
+          className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-gulf-700 transition hover:underline dark:text-gulf-300"
+        >
+          Open debug console
+        </button>
       </div>
     </div>
   );
@@ -1396,81 +1897,104 @@ export default function SetupWizard() {
   const stepRenderer: Record<string, () => React.ReactNode> = {
     intro: renderIntro,
     client_explain: renderClientExplain, client_select_device: renderClientSelectDevice, client_connect: renderClientConnect,
-    client_flashing: renderClientFlashing, client_error: renderClientError, client_restart: renderClientRestart, client_name: renderClientName, client_ready: renderClientReady,
+    client_flashing: renderClientFlashing, client_error: renderClientError, client_restart: renderClientRestart,
     repeater_explain: renderRepeaterExplain, repeater_select_device: renderRepeaterSelectDevice, repeater_connect: renderRepeaterConnect,
-    repeater_flashing: renderRepeaterFlashing, repeater_error: renderRepeaterError, repeater_restart: renderRepeaterRestart, repeater_config: renderRepeaterConfig, repeater_ready: renderRepeaterReady
+    repeater_flashing: renderRepeaterFlashing, repeater_error: renderRepeaterError, repeater_restart: renderRepeaterRestart, repeater_config: renderRepeaterConfig, repeater_ready: renderRepeaterReady,
   };
 
+  const inputClass =
+    'w-full rounded-xl border bg-white/80 px-3 py-3 text-sm text-ink-900 placeholder:text-ink-400 outline-none transition focus:border-gulf-400 focus:ring-2 focus:ring-gulf-400/40 dark:bg-ink-900/60 dark:text-white dark:placeholder:text-ink-500';
+
   return (
-    <div className="min-h-screen bg-white md:bg-gray-50 flex items-center justify-center p-0 md:p-4 font-sans selection:bg-blue-100 selection:text-blue-900">
-      <div className="w-full max-w-2xl bg-white md:rounded-[40px] md:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] overflow-hidden min-h-[100dvh] md:min-h-[600px] flex flex-col relative border-0 md:border md:border-gray-100">
-        <div className="h-1.5 w-full bg-gray-50">
-          <div className={`h-full transition-all duration-700 ease-in-out ${step.startsWith('repeater') ? 'bg-indigo-600' : 'bg-blue-600'}`} style={{ width: `${getProgress()}%` }} />
+    <div className="container pb-24">
+      <div className="mx-auto w-full max-w-2xl">
+        <div className="surface-strong relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gulf-400/60 to-transparent" />
+          <div className="h-1.5 w-full bg-ink-100/70 dark:bg-white/5">
+            <div
+              className={`h-full transition-all duration-700 ease-in-out ${
+                step.startsWith('repeater')
+                  ? 'bg-gradient-to-r from-sand-400 to-sand-600'
+                  : 'bg-gradient-to-r from-gulf-400 to-gulf-600'
+              }`}
+              style={{ width: `${getProgress()}%` }}
+            />
+          </div>
+          <div className="flex min-h-[600px] flex-col justify-center p-6 sm:p-12">
+            {stepRenderer[step]()}
+          </div>
         </div>
-        <div className="flex-1 p-8 sm:p-16 flex flex-col justify-center text-gray-900 relative">
-          {stepRenderer[step]()}
-        </div>
+
+        <p className="mt-12 text-center text-sm text-ink-500 dark:text-ink-400">
+          <Link href="/" className="font-medium text-gulf-700 hover:underline dark:text-gulf-300">
+            ← Back to home
+          </Link>
+        </p>
       </div>
+
       {renderTerminal()}
+
       {showMapModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="flex h-full max-h-[92vh] w-full max-w-6xl flex-col rounded-3xl bg-white p-4 shadow-2xl">
-            <div className="mb-3 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Set repeater coordinates">
+          <div className="surface-strong flex h-full max-h-[92vh] w-full max-w-6xl flex-col p-5">
+            <div className="mb-4 flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-lg font-black text-gray-900">Set Repeater Coordinates</h3>
-                <p className="text-xs text-gray-500">Click the US map or enter latitude and longitude manually.</p>
+                <span className="eyebrow">
+                  <MapPin className="h-3.5 w-3.5" aria-hidden />
+                  Coordinates
+                </span>
+                <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-ink-900 dark:text-white">
+                  Set repeater coordinates
+                </h3>
+                <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">
+                  Click the map or enter latitude and longitude manually.
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowMapModal(false)}
-                className="rounded-full bg-gray-100 p-2 text-gray-500 hover:bg-gray-200 hover:text-gray-900"
+                className="grid h-9 w-9 place-items-center rounded-full border bg-white/70 text-ink-600 transition hover:bg-white hover:text-ink-900 dark:border-white/10 dark:bg-white/5 dark:text-ink-300 dark:hover:bg-white/10"
+                style={{ borderColor: 'rgb(var(--line) / 0.7)' }}
                 aria-label="Close map"
               >
-                <X size={20} />
+                <X className="h-5 w-5" />
               </button>
             </div>
             <div className="min-h-0 flex-1">{renderRepeaterLocationMap(true)}</div>
-            <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-              <label className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
+            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+              <label className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
                 Latitude
                 <input
                   type="number"
                   step="0.000001"
                   value={repeaterConfig.lat.toFixed(6)}
                   onChange={(e) => handleCoordinateChange('lat', e.target.value)}
-                  className="mt-1 w-full rounded-lg border p-3 text-sm font-normal text-gray-900"
+                  className={`mt-1 ${inputClass}`}
+                  style={{ borderColor: 'rgb(var(--line) / 0.7)' }}
                 />
               </label>
-              <label className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
+              <label className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
                 Longitude
                 <input
                   type="number"
                   step="0.000001"
                   value={repeaterConfig.lon.toFixed(6)}
                   onChange={(e) => handleCoordinateChange('lon', e.target.value)}
-                  className="mt-1 w-full rounded-lg border p-3 text-sm font-normal text-gray-900"
+                  className={`mt-1 ${inputClass}`}
+                  style={{ borderColor: 'rgb(var(--line) / 0.7)' }}
                 />
               </label>
               <button
                 type="button"
                 onClick={() => setShowMapModal(false)}
-                className="self-end rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white hover:bg-indigo-700"
+                className="btn-primary self-end"
               >
-                USE LOCATION
+                Use location
               </button>
             </div>
           </div>
         </div>
       )}
-      <style jsx global>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
-        }
-      `}</style>
     </div>
   );
 }
