@@ -1,354 +1,201 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { Globe2, Radio } from "lucide-react";
+import { LiveMap } from "@/components/live-map";
 
-// ---------------- THEME HOOK ----------------
-type Theme = "light" | "dark";
-
-const useTheme = () => {
-  const getInitialTheme = (): Theme => {
-    if (typeof window !== "undefined" && window.localStorage) {
-      const storedTheme = window.localStorage.getItem("theme");
-      return (storedTheme as Theme) || "light";
-    }
-    return "light";
-  };
-
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
-
-  const rawSetTheme = (newTheme: Theme) => {
-    const root = window.document.documentElement;
-    const isDark = newTheme === "dark";
-
-    root.classList.remove(isDark ? "light" : "dark");
-    root.classList.add(isDark ? "dark" : "light");
-
-    window.localStorage.setItem("theme", newTheme);
-  };
-
-  useEffect(() => {
-    rawSetTheme(theme);
-  }, [theme]);
-
-  return [theme, setTheme] as const;
+export const metadata = {
+  title: "Live mesh maps",
+  description:
+    "Live packet analyzer and Meshview — real-time views of Meshcore and Meshtastic activity across the entire Gulf Coast.",
 };
 
-// ---------------- NAVBAR ----------------
-type NavbarProps = {
-  theme: Theme;
-  setTheme: React.Dispatch<React.SetStateAction<Theme>>;
-};
-
-// Shared nav links
-const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Docs", href: "https://docs.gulfcoastmesh.org" },
-  { label: "Mesh Maps", href: "/meshmap" },
-  { label: "Live Map", href: "https://analyzer.gulfcoastmesh.org/#/live", external: true },
-  { label: "Discord", href: "https://discord.gulfcoastmesh.org", external: true },
-  { label: "GitHub", href: "https://github.com/LouisianaMeshCommunity", external: true },
+const mqttRows: Array<[string, string]> = [
+  ["MQTT Enabled", "True"],
+  ["Encryption Enabled", "True"],
+  ["JSON Enabled", "False"],
+  ["Map Report Enabled", "Optional"],
+  ["Root Topic", "msh/US/LA"],
+  ["Server Address", "mqtt.gulfcoastmesh.org"],
+  ["Username", "uplink"],
+  ["Password", "uplink"],
+  ["TLS Enabled", "False"],
 ];
 
-const Navbar = ({ theme, setTheme }: NavbarProps) => {
-  const [navOpen, setNavOpen] = useState(false);
-
+export default function MeshmapPage() {
   return (
-    <nav className="fixed top-0 left-0 w-full z-30 bg-[#0b1120] border-b border-blue-900/30">
-      <div className="max-w-6xl mx-auto flex justify-between items-center px-4 py-3">
-        <Link
-          href="/"
-          className="text-xl font-bold text-white drop-shadow dark:text-gray-100"
-        >
-          Gulf Mesh
+    <div className="container pb-24">
+      <header className="mx-auto max-w-3xl text-center">
+        <span className="eyebrow mx-auto">
+          <Globe2 className="h-3.5 w-3.5" aria-hidden />
+          Live maps
+        </span>
+        <h1 className="mt-5 font-display text-display-xl font-semibold tracking-tight text-balance text-ink-900 dark:text-white">
+          See the mesh lighting up the coast.
+        </h1>
+        <p className="mt-5 text-pretty text-lg text-ink-600 dark:text-ink-300">
+          Two complementary views — the live Meshcore analyzer and the Meshtastic footprint — embedded right here.
+          Pan, zoom, and click nodes just like on the standalone sites.
+        </p>
+      </header>
+
+      {/* Primary MeshCore Analyzer */}
+      <section className="mt-12">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-gulf-700 dark:text-gulf-300">
+              Primary network
+            </p>
+            <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink-900 sm:text-3xl dark:text-white">
+              MeshCore — Live analyzer
+            </h2>
+          </div>
+          <p className="hidden max-w-sm text-sm text-ink-600 sm:block dark:text-ink-300">
+            Live packets as they arrive — channels, traces, observers, perf. The real-time view of what the mesh is
+            doing right now.
+          </p>
+        </div>
+        <LiveMap
+          src="https://analyzer.gulfcoastmesh.org/#/live"
+          title="Gulf Coast Mesh — Analyzer (live)"
+          label="Gulf Coast Analyzer"
+          sub="MeshCore · packets · channels · perf"
+          aspect="aspect-[4/3] sm:aspect-[16/10] lg:aspect-[2/1]"
+        />
+      </section>
+
+      {/* Secondary Meshtastic Meshview */}
+      <section className="mt-12">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-sand-700 dark:text-sand-300">
+              Meshtastic footprint
+            </p>
+            <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink-900 sm:text-3xl dark:text-white">
+              Meshtastic — Meshview
+            </h2>
+          </div>
+          <p className="hidden max-w-sm text-sm text-ink-600 sm:block dark:text-ink-300">
+            Explore neighborhood Meshtastic activity — strong Louisiana coverage with nodes appearing wherever
+            neighbors are building.
+          </p>
+        </div>
+        <LiveMap
+          src="https://meshview.gulfcoastmesh.org/chat"
+          title="Gulf Coast Mesh — Meshview (live)"
+          label="Gulf Coast Meshview"
+          sub="Meshtastic · live conversations & nodes"
+          aspect="aspect-[4/3] sm:aspect-[16/10] lg:aspect-[2/1]"
+        />
+      </section>
+
+      {/* MQTT instructions */}
+      <section className="surface relative mt-16 overflow-hidden p-8 sm:p-12">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-xl">
+            <span className="eyebrow">
+              <Radio className="h-3.5 w-3.5" aria-hidden />
+              Add your node
+            </span>
+            <h2 className="mt-4 font-display text-display-lg font-semibold tracking-tight text-ink-900 dark:text-white">
+              Put your Meshtastic device on the map via MQTT
+            </h2>
+          </div>
+          <p className="max-w-md text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+            Not near another reporting node? Publish through our Gulf Coast broker and you’ll show up on the live map.
+            Always confirm details against the latest docs.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+          <ol className="space-y-4">
+            <Step n="01" title="Open the Meshtastic app or web client" />
+            <Step n="02" title="Module Configuration → MQTT" detail="Apply the settings to the right." />
+            <Step n="03" title="Radio Configuration → Channels → 0 / Primary">
+              MQTT Uplink: <code className="kbd ml-1">Enabled</code>
+            </Step>
+          </ol>
+
+          <div className="surface-strong overflow-hidden rounded-2xl p-1">
+            <div className="rounded-xl border border-ink-200/60 bg-white/80 p-2 dark:border-white/10 dark:bg-ink-900/70">
+              <div className="flex items-center justify-between px-3 pb-2 pt-1">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
+                  MQTT module settings
+                </p>
+                <span className="font-mono text-[10px] text-ink-400">copy carefully</span>
+              </div>
+              <dl className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                {mqttRows.map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex items-center justify-between gap-3 rounded-lg border bg-white/70 px-3 py-2 dark:border-white/10 dark:bg-white/5"
+                    style={{ borderColor: "rgb(var(--line) / 0.6)" }}
+                  >
+                    <dt className="text-xs text-ink-600 dark:text-ink-300">{k}</dt>
+                    <dd>
+                      <code className="kbd">{v}</code>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-8 text-sm text-ink-600 dark:text-ink-300">
+          Questions? Hop into{" "}
+          <a
+            href="https://discord.gulfcoastmesh.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-gulf-700 underline-offset-4 hover:underline dark:text-gulf-300"
+          >
+            Discord
+          </a>{" "}
+          or browse{" "}
+          <a
+            href="https://docs.gulfcoastmesh.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-gulf-700 underline-offset-4 hover:underline dark:text-gulf-300"
+          >
+            the docs
+          </a>
+          .
+        </p>
+      </section>
+
+      <p className="mt-12 text-center text-sm text-ink-500 dark:text-ink-400">
+        <Link href="/" className="font-medium text-gulf-700 hover:underline dark:text-gulf-300">
+          ← Back to home
         </Link>
-
-        {/* Desktop Menu */}
-        <div className="hidden md:flex space-x-6 items-center text-white dark:text-gray-100 font-medium">
-          {navLinks.map(({ label, href, external }) =>
-            external ? (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-indigo-300 transition"
-              >
-                {label}
-              </a>
-            ) : (
-              <a
-                key={label}
-                href={href}
-                className="hover:text-indigo-300 transition"
-              >
-                {label}
-              </a>
-            )
-          )}
-
-          {/* Theme Toggle */}
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label="Toggle theme"
-            className="ml-4 p-2 rounded-full bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 text-white shadow transition-transform duration-300 hover:scale-110"
-          >
-            {theme === "dark" ? (
-              <Image
-                src="https://www.svgrepo.com/show/508131/moon.svg"
-                alt="Moon"
-                width={20}
-                height={20}
-                className="h-5 w-5"
-              />
-            ) : (
-              <Image
-                src="https://www.svgrepo.com/show/535669/sun.svg"
-                alt="Sun"
-                width={20}
-                height={20}
-                className="h-5 w-5"
-              />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setNavOpen(!navOpen)}
-          aria-label="Toggle navigation"
-          className="md:hidden p-2 rounded-lg text-white hover:bg-white/20 transition"
-        >
-          {navOpen ? (
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      {/* Mobile Dropdown */}
-      {navOpen && (
-        <div className="md:hidden bg-[#050B14]/95 border-b border-blue-900/30 text-white px-4 py-3 space-y-2 backdrop-blur-md">
-          {navLinks.map(({ label, href, external }) =>
-            external ? (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block hover:text-indigo-300 transition"
-                onClick={() => setNavOpen(false)}
-              >
-                {label}
-              </a>
-            ) : (
-              <a
-                key={label}
-                href={href}
-                className="block hover:text-indigo-300 transition"
-                onClick={() => setNavOpen(false)}
-              >
-                {label}
-              </a>
-            )
-          )}
-
-          <button
-            onClick={() => {
-              setTheme(theme === "dark" ? "light" : "dark");
-              setNavOpen(false);
-            }}
-            className="mt-3 p-2 rounded-lg bg-white/20 hover:bg-white/30"
-          >
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </button>
-        </div>
-      )}
-    </nav>
-  );
-};
-
-// --- LINKS PAGE COMPONENT ---
-const LinksContent = () => {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#050B14] px-6 py-24 sm:py-32 transition-all duration-300">
-      <div className="max-w-4xl w-full">
-        {/* Main Content */}
-        <header className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-4 drop-shadow-lg uppercase tracking-tight">
-            Gulf Coast <span className="text-[#10b981]">Mesh Map</span>
-          </h1>
-          <p className="text-lg text-gray-300">
-            A map powered by the Gulf Coast Mesh.
-          </p>
-        </header>
-
-        {/* Links Grid */}
-        <div className="grid grid-cols-1 gap-6">
-          {/* Explorer Bar */}
-          <a
-            href="https://explorer.gulfcoastmesh.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-[#0f172a] rounded-2xl shadow-xl hover:shadow-[0_0_25px_rgba(16,185,129,0.15)] transition-all duration-300 transform hover:-translate-y-2 border-b-4 border-[#10b981] hover:border-[#34d399]"
-          >
-            {/* Left side: Title */}
-            <div className="flex items-center gap-4 text-left mb-2 sm:mb-0">
-              <h2 className="text-xl font-bold text-white uppercase tracking-wide">
-                Explorer
-              </h2>
-            </div>
-            {/* Right side: Description */}
-            <div className="sm:ml-6 text-left sm:text-right text-gray-300">
-              Our Primary Meshcore Network, and map to view live trafic around Coast.
-            </div>
-          </a>
-
-          {/* Meshview Bar */}
-          <a
-            href="https://meshview.gulfcoastmesh.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-[#0f172a] rounded-2xl shadow-xl hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all duration-300 transform hover:-translate-y-2 border-b-4 border-blue-500 hover:border-blue-400"
-          >
-            {/* Left side: Title */}
-            <div className="flex items-center gap-4 text-left mb-2 sm:mb-0">
-              <h2 className="text-xl font-bold text-white uppercase tracking-wide">
-                Meshview
-              </h2>
-            </div>
-            {/* Right side: Description */}
-            <div className="sm:ml-6 text-left sm:text-right text-gray-300">
-              Our Secondary Meshtastic Network Map, to view live trafic in local areas; primarily Louisiana.
-            </div>
-          </a>
-        </div>
-
-        {/* Divider */}
-        <div className="my-10 border-t border-white/5"></div>
-
-        {/* How-to Section */}
-        <div className="bg-[#0f172a] rounded-3xl shadow-2xl p-8 sm:p-12 border border-blue-500/20 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 bg-blue-500 h-full"></div>
-          <h2 className="text-2xl font-bold text-white mb-4 uppercase tracking-wide">
-            How to Add Your Device to the Map via MQTT for Meshtastic
-          </h2>
-          <p className="text-gray-300 mb-6">
-            If you&apos;re not nearby another node reporting to the map, you can have your device report itself to the map via MQTT.
-          </p>
-          <ul className="list-disc list-inside space-y-3 text-gray-300">
-            <li>Open the Meshtastic app or web client.</li>
-            <li className="font-bold text-white">Module Configuration &gt; MQTT</li>
-            <ul className="list-disc list-inside ml-5 space-y-2">
-              <li>
-                MQTT Enabled:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  True
-                </code>
-              </li>
-              <li>
-                Encryption Enabled:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  True
-                </code>
-              </li>
-              <li>
-                JSON Enabled:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  False
-                </code>
-              </li>
-              <li>
-                Map Report Enabled:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  Optional
-                </code>
-              </li>
-              <li>
-                Root Topic:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  msh/US/LA
-                </code>
-              </li>
-              <li>
-                Server Address:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  mqtt.gulfcoastmesh.org
-                </code>
-              </li>
-              <li>
-                Username:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  uplink
-                </code>
-              </li>
-              <li>
-                Password:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  uplink
-                </code>
-              </li>
-              <li>
-                TLS Enabled:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  False
-                </code>
-              </li>
-            </ul>
-            <li className="font-bold text-white mt-4">
-              Radio Configuration &gt; Channels &gt; 0 / Primary
-            </li>
-            <ul className="list-disc list-inside ml-5 mt-2">
-              <li>
-                MQTT Uplink:{" "}
-                <code className="font-mono bg-[#050B14] text-[#10b981] px-2 py-1 rounded">
-                  Enabled
-                </code>
-              </li>
-            </ul>
-          </ul>
-        </div>
-      </div>
+      </p>
     </div>
   );
-};
+}
 
-// Main App component
-const App = () => {
-  const [theme, setTheme] = useTheme();
-
+function Step({
+  n,
+  title,
+  detail,
+  children,
+}: {
+  n: string;
+  title: string;
+  detail?: string;
+  children?: React.ReactNode;
+}) {
   return (
-    <>
-      <Navbar theme={theme} setTheme={setTheme} />
-      <LinksContent />
-    </>
+    <li
+      className="flex gap-4 rounded-2xl border bg-white/60 p-4 dark:border-white/10 dark:bg-white/5"
+      style={{ borderColor: "rgb(var(--line) / 0.6)" }}
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gulf-500/15 font-mono text-xs font-bold text-gulf-700 dark:text-gulf-300">
+        {n}
+      </span>
+      <div className="min-w-0">
+        <p className="font-display text-sm font-semibold text-ink-900 dark:text-white">{title}</p>
+        {detail ? <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">{detail}</p> : null}
+        {children ? <p className="mt-1 text-sm text-ink-600 dark:text-ink-300">{children}</p> : null}
+      </div>
+    </li>
   );
-};
-
-export default App;
+}

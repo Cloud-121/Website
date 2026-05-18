@@ -1,376 +1,531 @@
-"use client";
+import Link from "next/link";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Boxes,
+  BookOpen,
+  CalendarCheck,
+  CircuitBoard,
+  Compass,
+  Cpu,
+  Map as MapIcon,
+  Router,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  Wind,
+  Zap,
+} from "lucide-react";
+import { LiveMap } from "@/components/live-map";
+import { getMeshStats, fmt, type StateCode } from "@/lib/mesh-stats";
 
-import React, { useState, useEffect } from "react";
-import Image from "next/image"; // Added next/image import
-
-type Theme = "light" | "dark";
-
-// Custom theme hook
-const useTheme = () => {
-  const getInitialTheme = (): Theme => {
-    if (typeof window !== "undefined" && window.localStorage) {
-      const storedTheme = window.localStorage.getItem("theme");
-      return (storedTheme as Theme) || "light";
-    }
-    return "light";
-  };
-
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
-
-  const rawSetTheme = (newTheme: Theme) => {
-    const root = window.document.documentElement;
-    const isDark = newTheme === "dark";
-
-    root.classList.remove(isDark ? "light" : "dark");
-    root.classList.add(isDark ? "dark" : "light");
-
-    window.localStorage.setItem("theme", newTheme);
-  };
-
-  useEffect(() => {
-    rawSetTheme(theme);
-  }, [theme]);
-
-  return [theme, setTheme] as const;
+type Region = {
+  code: StateCode;
+  name: string;
+  cities: string;
+  forceLive?: boolean;
 };
 
-// Nav links (used for both desktop and mobile)
-const navLinks = [
-  { label: "Home", href: "#home" },
-  { label: "Docs", href: "https://docs.gulfcoastmesh.org" },
-  { label: "Mesh Maps", href: "/meshmap" },
-  { label: "Live Map", href: "https://analyzer.gulfcoastmesh.org/#/live", external: true },
-  { label: "Discord", href: "https://discord.gulfcoastmesh.org", external: true },
-  { label: "GitHub", href: "https://github.com/LouisianaMeshCommunity", external: true },
+const regions: Region[] = [
+  { code: "TX", name: "South Texas", cities: "Corpus Christi · Houston · Galveston" },
+  { code: "LA", name: "Louisiana", cities: "Lake Charles · Lafayette · Baton Rouge · New Orleans" },
+  { code: "MS", name: "Mississippi Coast", cities: "Gulfport · Biloxi · Pascagoula", forceLive: true },
+  { code: "AL", name: "Alabama Shore", cities: "Mobile · Dauphin Island · Gulf Shores" },
+  { code: "FL", name: "Northwest Florida", cities: "Pensacola · Destin · Panama City" },
 ];
 
-const App = () => {
-  const [theme, setTheme] = useTheme();
-  const [navOpen, setNavOpen] = useState(false);
-  const [navBg, setNavBg] = useState("bg-transparent");
-  const [showBanner, setShowBanner] = useState(true);
+const steps = [
+  {
+    n: "01",
+    icon: CircuitBoard,
+    title: "Pick your hardware",
+    body: "New to LoRa? Start with our recommended devices and the antenna guide so your first radio just works.",
+    links: [
+      { label: "Recommended devices", href: "https://docs.gulfcoastmesh.org/devicerecs/" },
+      { label: "Antenna guide", href: "https://docs.gulfcoastmesh.org/antenna/" },
+    ],
+  },
+  {
+    n: "02",
+    icon: Smartphone,
+    title: "Set up a daily-carry companion",
+    body: "Get a MeshCore companion on your belt or in your bag — paired with your phone, ready to message neighbors.",
+    links: [
+      { label: "Companion setup guide", href: "https://docs.gulfcoastmesh.org/setting-up-meshcore-companion/" },
+      { label: "Frequency settings", href: "https://docs.gulfcoastmesh.org/freq-settings/" },
+    ],
+  },
+  {
+    n: "03",
+    icon: Router,
+    title: "Or stand up a repeater",
+    body: "Have a place with sky? Run a repeater and extend the network. We’ll help you plan, build, and tune it.",
+    links: [
+      { label: "Repeater setup", href: "https://docs.gulfcoastmesh.org/meshcore-repeater-setup/" },
+      { label: "Estimate coverage", href: "https://docs.gulfcoastmesh.org/estimate-coverage-with-meshmapper/" },
+    ],
+  },
+];
 
-  // Handle scroll event to change the navbar background
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setNavBg("bg-[#0b1120] shadow-lg");
-      } else {
-        setNavBg("bg-transparent");
-      }
-    };
+export default async function HomePage() {
+  const mesh = await getMeshStats();
 
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  // Updated Icon component using next/image
-  const Icon = ({ src, alt, className }: { src: string; alt: string; className?: string }) => (
-    <Image
-      src={src}
-      alt={alt}
-      width={24}
-      height={24}
-      className={className}
-      style={{ objectFit: 'contain' }}
-    />
-  );
-
-  const NavItem = ({ label, href, external, className }: typeof navLinks[number] & { className?: string }) => {
-    const baseClasses = `hover:text-indigo-300 transition cursor-pointer ${className || ''}`;
-    const handleClick = () => {
-      if (href.startsWith('#')) {
-        document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
-      }
-      setNavOpen(false);
-    };
-
-    if (external) {
-      return (
-        <a
-          key={label}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={baseClasses}
-        >
-          {label}
-        </a>
-      );
-    }
-
-    return (
-      <a
-        key={label}
-        href={href}
-        className={baseClasses}
-        onClick={handleClick}
-      >
-        {label}
-      </a>
-    );
-  };
+  const stats = mesh.ok
+    ? [
+        {
+          value: fmt(mesh.totalMapped),
+          label: "mapped nodes",
+          caption: `${fmt(mesh.totalSeen)} ever seen`,
+        },
+        {
+          value: fmt(mesh.repeaters),
+          label: "repeaters",
+          caption: `${fmt(mesh.rooms)} room servers on the backbone`,
+        },
+        {
+          value: fmt(mesh.activeLast24h),
+          label: "active in 24h",
+          caption: `${fmt(mesh.onlineNow)} online right now`,
+        },
+        {
+          value: fmt(mesh.historyEdges),
+          label: "links observed",
+          caption: "across the rolling window",
+        },
+      ]
+    : [
+        { value: "5", label: "Gulf states", caption: "TX · LA · MS · AL · FL" },
+        { value: "1,600 mi", label: "of coastline", caption: "Brownsville → Apalachicola" },
+        { value: "32", label: "max mesh hops", caption: "via Meshcore pathing" },
+        { value: "100%", label: "open source", caption: "Hardware + firmware + docs" },
+      ];
 
   return (
     <>
-      {/* Announcement Banner */}
-      {showBanner && (
-        <div className="fixed top-0 left-0 w-full z-50 bg-indigo-600 text-white px-4 py-2 text-center text-sm sm:text-base font-medium shadow-md flex items-center justify-center gap-2">
-          <span className="flex items-center gap-2">
-            <span role="img" aria-label="loudspeaker"></span>
-            New Meshcore settings! Please{""}
-            <a
-              href="https://docs.gulfcoastmesh.org/freq-settings/"
-              className="underline font-bold hover:text-indigo-100 transition"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              read our docs
-            </a>{" "}
-            to ensure your repeater works correctly.
-          </span>
-          <button
-            onClick={() => setShowBanner(false)}
-            className="ml-4 p-1 hover:bg-white/20 rounded-full transition shrink-0"
-            aria-label="Dismiss banner"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
+      {/* HERO */}
+      <section className="container relative overflow-hidden pb-24 pt-6 sm:pt-10 lg:pb-28">
+        <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
+          {/* LEFT — copy */}
+          <div className="lg:col-span-5 lg:pt-6">
+            <span className="eyebrow">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gulf-400 opacity-50" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-gulf-500" />
+              </span>
+              {mesh.ok ? `${fmt(mesh.totalMapped)} nodes live` : "Live on the bayou"}
+              <span className="mx-1.5 text-ink-400">·</span>
+              expanding the Gulf
+            </span>
 
-      {/* Navbar - Adjusted top offset based on banner visibility */}
-      <nav
-        className={`fixed ${showBanner ? 'top-10 sm:top-10' : 'top-0'} left-0 w-full z-40 transition-all duration-300 ${navBg} backdrop-blur-sm`}
-      >
-        <div className="max-w-6xl mx-auto flex justify-between items-center px-4 py-3">
-          <a
-            href="#home"
-            className="text-xl font-bold text-white drop-shadow dark:text-gray-100"
-            onClick={(e) => {
-              e.preventDefault();
-              document.querySelector('#home')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            Gulf Mesh
-          </a>
+            <h1 className="mt-6 font-display text-display-xl font-semibold tracking-tight text-balance text-ink-900 dark:text-white">
+              Comms that hold
+              <br />
+              when the <span className="gradient-text">coast does not</span>.
+            </h1>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex space-x-6 items-center text-white dark:text-gray-100 font-medium">
-            {navLinks.map((link) => (
-              <NavItem key={link.label} {...link} />
-            ))}
+            <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-ink-600 dark:text-ink-300">
+              Gulf Coast Mesh is a volunteer-built communications fabric — anchored in Louisiana, growing across the
+              US Gulf Coast. Open hardware. Decentralized routing. Real neighbors on the other end.
+            </p>
 
-            {/* Theme Toggle */}
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              aria-label="Toggle theme"
-              className="ml-4 p-2 rounded-full bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 text-white shadow transition-transform duration-300 hover:scale-110 flex items-center justify-center"
-            >
-              {theme === "dark" ? (
-                <Icon
-                  className="h-5 w-5"
-                  src="https://www.svgrepo.com/show/508131/moon.svg"
-                  alt="Moon"
-                />
-              ) : (
-                <Icon
-                  className="h-5 w-5"
-                  src="https://www.svgrepo.com/show/535669/sun.svg"
-                  alt="Sun"
-                />
-              )}
-            </button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setNavOpen(!navOpen)}
-            aria-label="Toggle navigation"
-            className="md:hidden p-2 rounded-lg text-white hover:bg-white/20 transition"
-          >
-            {navOpen ? (
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Dropdown */}
-        {navOpen && (
-          <div className="md:hidden bg-[#050B14]/95 border-b border-blue-900/30 text-white px-4 py-3 space-y-2 backdrop-blur-md">
-            {navLinks.map((link) => (
-              <NavItem key={link.label} {...link} className="block" />
-            ))}
-
-            <button
-              onClick={() => {
-                setTheme(theme === "dark" ? "light" : "dark");
-                setNavOpen(false);
-              }}
-              className="mt-3 p-2 rounded-lg bg-white/20 hover:bg-white/30 w-full text-left"
-            >
-              {theme === "dark" ? "Light Mode" : "Dark Mode"}
-            </button>
-          </div>
-        )}
-      </nav>
-
-      {/* Hero Section */}
-      <div
-        id="home"
-        className="relative min-h-screen flex flex-col items-center justify-center px-4 bg-[#050B14]"
-      >
-
-        <div className="relative z-10 flex flex-col items-center justify-center w-full text-center mt-20 max-w-5xl mx-auto px-4">
-          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight text-white drop-shadow-lg mb-4 uppercase">
-            Gulf Coast <span className="text-[#10b981]">Mesh</span>
-          </h1>
-
-          <div className="text-[#10b981] font-semibold tracking-widest uppercase text-xs sm:text-sm mb-8 drop-shadow-sm">
-            Decentralized / Off-Grid / Community-powered
-          </div>
-
-          <p className="text-lg sm:text-xl text-gray-200 mb-10 leading-relaxed max-w-3xl mx-auto">
-            A growing group of individuals dedicated to interconnecting Louisiana&apos;s cities and others&apos; along the Gulf Coast with a decentralized, open-source messaging system. Providing a resilient communication channel that works even when infrastructure is damaged.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="https://docs.gulfcoastmesh.org/"
-              className="flex items-center justify-center gap-2 bg-[#10b981] text-black font-bold py-3 px-8 rounded-xl hover:bg-[#34d399] shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] transition-all duration-300 transform hover:-translate-y-1"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Join Our Network
-            </a>
-
-            <a
-              href="https://discord.gulfcoastmesh.org"
-              className="flex items-center justify-center gap-2 bg-[#059669] text-white font-semibold py-3 px-8 rounded-xl hover:bg-[#047857] shadow-[0_0_15px_rgba(5,150,105,0.4)] hover:shadow-[0_0_25px_rgba(5,150,105,0.6)] transition-all duration-300 transform hover:-translate-y-1"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Join Our Discord
-            </a>
-
-            <a
-              href="https://analyzer.gulfcoastmesh.org/#/live"
-              className="flex items-center justify-center gap-2 bg-[#065f46] text-white font-semibold py-3 px-8 rounded-xl hover:bg-[#064e3b] shadow-[0_0_15px_rgba(6,95,70,0.4)] hover:shadow-[0_0_25px_rgba(6,95,70,0.6)] transition-all duration-300 transform hover:-translate-y-1"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Network Map
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="bg-[#050B14] py-20 px-6 border-t border-white/5">
-        <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white mb-16 tracking-tight">
-            How It <span className="text-[#10b981]">Works</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-[#0f172a] p-8 rounded-3xl border border-blue-500/20 text-left relative overflow-hidden hover:border-[#10b981]/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all duration-300 transform hover:-translate-y-1">
-              <div className="text-7xl font-black text-[#10b981]/10 absolute -top-6 -right-4 select-none">1</div>
-              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide relative z-10">Get a Radio</h3>
-              <p className="text-gray-300 leading-relaxed relative z-10">
-                LoRa mesh devices start around $30-100. Check out our recommended devices to get started.
-              </p>
-            </div>
-
-            <div className="bg-[#0f172a] p-8 rounded-3xl border border-blue-500/20 text-left relative overflow-hidden hover:border-[#10b981]/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all duration-300 transform hover:-translate-y-1">
-              <div className="text-7xl font-black text-[#10b981]/10 absolute -top-6 -right-4 select-none">2</div>
-              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide relative z-10">Install & Configure</h3>
-              <p className="text-gray-300 leading-relaxed relative z-10">
-                Flash MeshCore firmware and apply our local settings. Just takes about 10 minutes with our setup guide.
-              </p>
-            </div>
-
-            <div className="bg-[#0f172a] p-8 rounded-3xl border border-blue-500/20 text-left relative overflow-hidden hover:border-[#10b981]/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all duration-300 transform hover:-translate-y-1">
-              <div className="text-7xl font-black text-[#10b981]/10 absolute -top-6 -right-4 select-none">3</div>
-              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide relative z-10">Start Messaging</h3>
-              <p className="text-gray-300 leading-relaxed relative z-10">
-                Connect via Bluetooth to your phone and you&apos;re ready. Works anywhere within mesh range.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="newsletter" className="bg-[#0b1120] py-24 px-6 border-t border-blue-900/30">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-white mb-8 tracking-tight">
-            Stay <span className="text-[#10b981]">Connected</span>
-          </h2>
-          <a
-            href="https://gulfcoastmesh.org/emailsignup"
-            className="inline-flex items-center justify-center gap-2 bg-[#10b981] text-black font-bold py-4 px-10 rounded-xl hover:bg-[#34d399] shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] transition-all duration-300 transform hover:-translate-y-1 text-lg"
-          >
-            Sign up for our newsletter
-          </a>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-12 bg-[#050B14] text-gray-400 border-t border-white/5">
-        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-10 items-center">
-          <div className="order-2 md:order-none text-center md:text-left text-sm flex flex-col items-center md:items-start">
-            <p className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Supporters</p>
-            <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-              {["ma7", "n5msy", "talwah", "simon", "kyra", "terry", "mike", "rg3120", "Mike Baldwin"].map(name => (
-                <span key={name} className="px-3 py-1 bg-[#0f172a] text-[#10b981] rounded-full text-xs font-semibold tracking-wide border border-blue-500/20 shadow-sm hover:border-[#10b981] transition cursor-default">
-                  {name}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="order-1 md:order-none flex flex-col items-center gap-3 text-center">
-            <span className="text-sm">&copy; {new Date().getFullYear()} Louisiana Mesh Community</span>
-            <div className="flex items-center gap-4 text-sm text-gray-300">
-              <a href="https://github.com/LouisianaMeshCommunity/Website" target="_blank" rel="noopener noreferrer" className="hover:text-white transition" aria-label="GitHub">
-                <Icon className="h-6 w-6 invert" src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" />
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <a
+                href="https://discord.gulfcoastmesh.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary w-full sm:w-auto"
+              >
+                Join the Discord
+                <ArrowRight className="h-4 w-4" aria-hidden />
               </a>
-              <a href="https://discord.gulfcoastmesh.org" target="_blank" rel="noopener noreferrer" className="hover:text-white transition" aria-label="Discord">
-                <Icon className="h-6 w-6 invert" src="https://www.svgrepo.com/show/473585/discord.svg" alt="Discord" />
-              </a>
-              <a href="https://ko-fi.com/louisianameshcommunity" target="_blank" rel="noopener noreferrer" className="hover:text-white transition" aria-label="Ko-fi">
-                <Icon className="h-6 w-6 invert" src="https://www.svgrepo.com/show/330802/kofi.svg" alt="Ko-fi" />
+              <Link href="/meshmap" className="btn-ghost w-full sm:w-auto">
+                See the live map
+                <MapIcon className="h-4 w-4 opacity-80" aria-hidden />
+              </Link>
+              <a
+                href="https://docs.gulfcoastmesh.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group ml-1 inline-flex items-center gap-1.5 text-sm font-medium text-ink-700 hover:text-ink-950 dark:text-ink-200 dark:hover:text-white"
+              >
+                Read the docs
+                <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
               </a>
             </div>
+
+            <p className="mt-5 inline-flex items-center gap-2 text-xs text-ink-600 dark:text-ink-300">
+              <CalendarCheck className="h-3.5 w-3.5 text-gulf-600 dark:text-gulf-300" />
+              <span>
+                <span className="font-semibold text-ink-900 dark:text-white">Weekly Monday voice net</span> on Discord —
+                everyone welcome.
+              </span>
+            </p>
+
+            <div className="mt-10 flex flex-wrap items-center gap-3">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-500 dark:text-ink-400">
+                Stack
+              </span>
+              <Pill icon={Cpu}>Meshcore</Pill>
+              <Pill icon={Boxes}>LoRa · 915 MHz</Pill>
+              <Pill icon={ShieldCheck}>End-to-end</Pill>
+            </div>
           </div>
 
-          <div className="order-3 md:order-none text-center text-sm">
-            <p className="font-semibold text-white mb-2">Thank You to Our Partners</p>
-            <a href="https://heltec.org/" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition" aria-label="Heltec Automation">
-              {/* Updated Partner Logo using next/image */}
-              <Image
-                src="https://heltec.org/wp-content/uploads/2021/05/heltec-logo.png"
-                alt="Heltec Partner"
-                width={140}
-                height={40}
-                className="h-10 w-auto mx-auto"
-                style={{ objectFit: 'contain' }}
+          {/* RIGHT — live map (now wider + taller) */}
+          <div className="lg:col-span-7">
+            <div className="relative">
+              <LiveMap
+                src="https://explorer.gulfcoastmesh.org/embed"
+                title="Gulf Coast Mesh — Explorer (live)"
+                label="Gulf Coast Explorer"
+                sub={
+                  mesh.ok
+                    ? `MeshCore · ${fmt(mesh.totalMapped)} nodes · ${fmt(mesh.activeLast24h)} active 24h`
+                    : "MeshCore · live packets & nodes"
+                }
+                aspect="aspect-[5/4] sm:aspect-[4/3] lg:aspect-[5/4] xl:aspect-[6/5]"
+                className="lg:min-h-[560px]"
               />
-            </a>
+              <div className="pointer-events-none absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-gulf-400/20 blur-3xl" />
+              <div className="pointer-events-none absolute -top-8 -left-6 h-24 w-24 rounded-full bg-sand-400/20 blur-3xl" />
+            </div>
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* STATS STRIP */}
+      <section className="container">
+        <div className="surface-strong relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-gulf-400/15 via-transparent to-transparent" aria-hidden />
+          <div className="relative grid grid-cols-2 divide-x divide-ink-200/60 sm:grid-cols-4 dark:divide-white/10">
+            {stats.map((s) => (
+              <div key={s.label} className="px-5 py-7 sm:px-7 sm:py-8">
+                <p className="font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-4xl dark:text-white">
+                  {s.value}
+                </p>
+                <p className="mt-1 text-sm font-medium text-ink-700 dark:text-ink-100">{s.label}</p>
+                <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-500 dark:text-ink-400">
+                  {s.caption}
+                </p>
+              </div>
+            ))}
+          </div>
+          {mesh.ok ? (
+            <p className="border-t border-ink-200/60 px-5 py-2 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-ink-500 dark:border-white/10 dark:text-ink-400">
+              live snapshot · auto-refreshes every 5 min ·{" "}
+              <Link
+                href="/meshmap"
+                className="text-gulf-700 hover:underline dark:text-gulf-300"
+              >
+                open live maps
+              </Link>
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      {/* NETWORK / FEATURES BENTO */}
+      <section id="network" className="container py-20 sm:py-28">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <span className="eyebrow">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden />
+              The network
+            </span>
+            <h2 className="mt-4 font-display text-display-lg font-semibold tracking-tight text-ink-900 dark:text-white">
+              Rooftops, towers, and front porches — all on the same mesh.
+            </h2>
+          </div>
+          <p className="max-w-md text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+            Mesh radios pass messages neighbor-to-neighbor over license-free LoRa. Backbone repeaters live on real
+            towers and high rooftops, with three more tower sites coming online in the next three months.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-4 md:grid-cols-12 md:grid-rows-[auto_auto]">
+          {/* Big feature: maps */}
+          <div className="tile tile-accent md:col-span-7 md:row-span-2 md:p-9">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gulf-500/15 text-gulf-700 dark:text-gulf-300">
+              <MapIcon className="h-5 w-5" aria-hidden />
+            </span>
+            <h3 className="mt-5 font-display text-2xl font-semibold text-ink-900 dark:text-white">
+              Live maps you can actually read
+            </h3>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+              Watch Meshcore and Meshtastic activity ripple across the coast in real time. See who heard whom, which
+              repeaters are hot, and where the next install would matter most.
+            </p>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              <Link
+                href="/meshmap"
+                className="surface group flex items-center justify-between rounded-2xl px-4 py-3 transition hover:-translate-y-0.5"
+              >
+                <span className="text-sm font-semibold text-ink-900 dark:text-white">Open Analyzer</span>
+                <ArrowUpRight className="h-4 w-4 text-gulf-700 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 dark:text-gulf-300" aria-hidden />
+              </Link>
+              <Link
+                href="/meshmap"
+                className="surface group flex items-center justify-between rounded-2xl px-4 py-3 transition hover:-translate-y-0.5"
+              >
+                <span className="text-sm font-semibold text-ink-900 dark:text-white">Open Meshview</span>
+                <ArrowUpRight className="h-4 w-4 text-gulf-700 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 dark:text-gulf-300" aria-hidden />
+              </Link>
+            </div>
+          </div>
+
+          {/* Resilience */}
+          <div className="tile md:col-span-5">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-sand-400/15 text-sand-700 dark:text-sand-300">
+              <Wind className="h-5 w-5" aria-hidden />
+            </span>
+            <h3 className="mt-5 font-display text-lg font-semibold text-ink-900 dark:text-white">
+              Built for hurricane season
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+              When the cell network drops and the internet goes with it, the mesh keeps moving — on solar, battery, or
+              a USB pack — backed by our repeaters on tall sites.
+            </p>
+          </div>
+
+          {/* Open */}
+          <div className="tile md:col-span-5">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-ink-700/10 text-ink-700 dark:text-ink-200">
+              <Zap className="h-5 w-5" aria-hidden />
+            </span>
+            <h3 className="mt-5 font-display text-lg font-semibold text-ink-900 dark:text-white">
+              Open and tinkerable
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+              Open firmware, open docs, open neighbors. Hack the stack, file a PR, or just show up and ask questions.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* PROTOCOLS — dark inset card */}
+      <section className="container">
+        <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-ink-950 text-ink-50 shadow-glow">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_420px_at_15%_-10%,rgba(45,209,189,0.25),transparent_55%),radial-gradient(700px_360px_at_95%_15%,rgba(249,162,40,0.16),transparent_55%)]" />
+          <div className="relative grid gap-10 p-8 sm:p-12 lg:grid-cols-12 lg:items-center">
+            <div className="lg:col-span-5">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-gulf-300">
+                Stack snapshot
+              </p>
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                Meshcore
+              </h2>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-ink-300">
+                One obsession: messages that arrive. Meshcore is the backbone of the Gulf Coast network —
+                reliability-first routing built to scale from a single rooftop to the whole coast.
+              </p>
+            </div>
+            <div className="lg:col-span-7">
+              <ProtocolCard
+                icon={Sparkles}
+                tint="from-fuchsia-500/20 to-gulf-500/10"
+                title="Meshcore"
+                blurb="Reliability-first routing with deep pathing — up to 32 hops for coast-scale links and repeater backbones."
+                tags={["Long hops", "Repeater-friendly", "Pathing"]}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="container py-20 sm:py-28">
+        <div className="max-w-2xl">
+          <span className="eyebrow">
+            <BookOpen className="h-3.5 w-3.5" aria-hidden />
+            How it works
+          </span>
+          <h2 className="mt-4 font-display text-display-lg font-semibold tracking-tight text-ink-900 dark:text-white">
+            From box-fresh radio to the coast-wide net in three steps.
+          </h2>
+        </div>
+
+        <ol className="mt-12 grid gap-4 lg:grid-cols-3">
+          {steps.map((s) => (
+            <li key={s.n} className="tile group flex h-full flex-col">
+              <div className="flex items-center justify-between">
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gulf-500/10 text-gulf-700 dark:text-gulf-300">
+                  <s.icon className="h-5 w-5" aria-hidden />
+                </span>
+                <span className="font-mono text-xs font-semibold text-ink-400 dark:text-ink-500">{s.n}</span>
+              </div>
+              <h3 className="mt-5 font-display text-lg font-semibold text-ink-900 dark:text-white">{s.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">{s.body}</p>
+              {s.links?.length ? (
+                <ul className="mt-5 flex flex-wrap gap-2 border-t border-ink-200/60 pt-4 dark:border-white/10">
+                  {s.links.map((l) => (
+                    <li key={l.href}>
+                      <a
+                        href={l.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group/link inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-gulf-700 transition hover:border-gulf-400/60 hover:bg-gulf-500/5 dark:border-white/10 dark:text-gulf-300"
+                        style={{ borderColor: "rgb(var(--line) / 0.7)" }}
+                      >
+                        {l.label}
+                        <ArrowUpRight className="h-3 w-3 transition group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" aria-hidden />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* REGIONS */}
+      <section className="container">
+        <div className="surface relative overflow-hidden p-8 sm:p-12">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-center">
+            <div>
+              <span className="eyebrow">
+                <Compass className="h-3.5 w-3.5" aria-hidden />
+                Regions
+              </span>
+              <h2 className="mt-4 font-display text-display-lg font-semibold tracking-tight text-ink-900 dark:text-white">
+                Anchored in Louisiana,
+                <br />
+                growing the whole Gulf.
+              </h2>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+                Today the live network is concentrated across Louisiana. The mission is bigger — neighbors helping
+                neighbors from Corpus Christi to Panama City. If you’re elsewhere on the Gulf, come build with us.
+              </p>
+            </div>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {regions.map((r) => {
+                const count = mesh.byState[r.code] ?? 0;
+                const live = count > 0 || r.forceLive === true;
+                return (
+                  <li
+                    key={r.code}
+                    className={
+                      "group relative flex items-center gap-4 rounded-2xl border px-4 py-3.5 transition hover:-translate-y-0.5 " +
+                      (live
+                        ? "border-gulf-400/50 bg-gulf-500/5 dark:border-gulf-400/30 dark:bg-gulf-500/10"
+                        : "hover:border-gulf-400/30 dark:border-white/10")
+                    }
+                    style={!live ? { borderColor: "rgb(var(--line) / 0.7)" } : undefined}
+                  >
+                    <span
+                      className={
+                        "grid h-10 w-10 shrink-0 place-items-center rounded-xl font-mono text-xs font-bold " +
+                        (live
+                          ? "bg-gulf-500/20 text-gulf-700 dark:text-gulf-200"
+                          : "bg-ink-700/5 text-ink-500 dark:bg-white/5 dark:text-ink-400")
+                      }
+                    >
+                      {r.code}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-display text-sm font-semibold text-ink-900 dark:text-white">{r.name}</p>
+                        {live ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gulf-500/15 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-gulf-700 dark:text-gulf-200">
+                            <span className="h-1 w-1 rounded-full bg-gulf-500" />
+                            {count > 0 ? `${fmt(count)} live` : "Live"}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-sand-700 dark:border-white/10 dark:text-sand-300" style={{ borderColor: "rgb(var(--line) / 0.7)" }}>
+                            <span className="h-1 w-1 rounded-full bg-sand-400" />
+                            Coming soon
+                          </span>
+                        )}
+                      </div>
+                      <p className="truncate text-xs text-ink-500 dark:text-ink-400">{r.cities}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* OPERATOR NOTICE */}
+      <section className="container py-20 sm:py-28">
+        <div className="surface relative overflow-hidden p-10 sm:p-14">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sand-400/15 via-transparent to-gulf-500/10" />
+          <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-xl">
+              <span className="eyebrow">
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
+                Operator notice
+              </span>
+              <h2 className="mt-4 font-display text-2xl font-semibold text-ink-900 sm:text-3xl dark:text-white">
+                Meshcore frequency settings have been updated
+              </h2>
+              <p className="mt-3 text-ink-600 dark:text-ink-300">
+                Repeater operators — please review the latest guidance so the coast-wide network stays in sync.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+              <a
+                href="https://docs.gulfcoastmesh.org/freq-settings/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary"
+              >
+                Read the docs
+              </a>
+              <Link href="/meshmap" className="btn-ghost">
+                View live maps
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </>
   );
-};
+}
 
-export default App;
+function Pill({ icon: Icon, children }: { icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium text-ink-700 dark:text-ink-100"
+      style={{ borderColor: "rgb(var(--line) / 0.7)" }}
+    >
+      <Icon className="h-3.5 w-3.5 text-gulf-600 dark:text-gulf-300" />
+      {children}
+    </span>
+  );
+}
+
+function ProtocolCard({
+  icon: Icon,
+  tint,
+  title,
+  blurb,
+  tags,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  tint: string;
+  title: string;
+  blurb: string;
+  tags: string[];
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6">
+      <div className={`pointer-events-none absolute inset-0 -z-0 bg-gradient-to-br ${tint}`} />
+      <div className="relative flex items-center gap-3">
+        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-white">
+          <Icon className="h-5 w-5" />
+        </span>
+        <h3 className="font-display text-xl font-semibold text-white">{title}</h3>
+      </div>
+      <p className="relative mt-3 text-sm leading-relaxed text-ink-200">{blurb}</p>
+      <div className="relative mt-4 flex flex-wrap gap-1.5">
+        {tags.map((t) => (
+          <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-200">
+            {t}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}

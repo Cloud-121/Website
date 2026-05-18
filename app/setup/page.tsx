@@ -20,6 +20,7 @@ import {
 
 // Real flashing dependencies (dynamic import to avoid SSR issues if any, but "use client" handles it)
 import { ESPLoader, Transport } from 'esptool-js';
+import type { FlashOptions } from 'esptool-js';
 
 // ==========================================
 // MOCK NODE.JS BACKEND CALLS (PLACEHOLDERS)
@@ -629,8 +630,7 @@ export default function SetupWizard() {
       const esploader = new ESPLoader({
         transport: transportRef.current!,
         baudrate: 115200,
-        terminal: espLoaderTerminal,
-        romBaudrate: 115200
+        terminal: espLoaderTerminal
       });
       esploaderRef.current = esploader;
 
@@ -638,12 +638,8 @@ export default function SetupWizard() {
       await esploader.main();
       addLog(`[FLASH] Connected to chip: ${esploader.chip.CHIP_NAME}\n`);
 
-      // 4. Write Flash
-      // esptool-js (some versions) expects binary string instead of Uint8Array for file data
-      const imageBstr = esploader.ui8ToBstr(firmwareData);
-
-      const flashOptions = {
-        fileArray: [{ data: imageBstr, address: 0x0 }],
+      const flashOptions: FlashOptions = {
+        fileArray: [{ data: firmwareData, address: 0x0 }],
         flashSize: 'keep',
         flashMode: 'keep',
         flashFreq: 'keep',
