@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Heart, Mail } from "lucide-react";
+import { ArrowUpRight, Coffee, Heart, Mail } from "lucide-react";
 
 const supporters = ["ma7", "n5msy", "talwah", "simon", "kyra", "terry", "mike", "rg3120", "Mike Baldwin"];
 
@@ -71,6 +71,19 @@ export function SiteFooter() {
                 </span>
               ))}
             </div>
+            <a
+              href="https://ko-fi.com/gulfcoastmesh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group mt-5 inline-flex items-center gap-2 rounded-full border border-coral-500/30 bg-coral-500/5 px-3 py-1.5 text-xs font-medium text-coral-500 transition hover:border-coral-500/50 hover:bg-coral-500/10"
+            >
+              <Coffee className="h-3.5 w-3.5" aria-hidden />
+              Buy us a coffee
+              <ArrowUpRight className="h-3 w-3 opacity-60 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" aria-hidden />
+            </a>
+            <p className="mt-2 text-[11px] text-ink-500 dark:text-ink-400">
+              Tower fees and antennas — every coffee helps.
+            </p>
           </div>
 
           <div className="lg:text-right">

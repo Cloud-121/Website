@@ -144,8 +144,8 @@ const community: Resource[] = [
   },
   {
     title: "Support on Ko-fi",
-    description: "Stickers, donations, and ways to thank the volunteers who keep the network growing.",
-    href: "https://ko-fi.com/louisianameshcommunity",
+    description: "Antennas, tower fees, and repeater hardware aren’t free — chip in if you can. Every coffee helps keep the mesh on the air.",
+    href: "https://ko-fi.com/gulfcoastmesh",
     icon: Coffee,
     tag: "Support",
     accent: "from-coral-400/25 to-sand-500/10",

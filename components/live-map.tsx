@@ -2,10 +2,16 @@
 
 import { useRef, useState } from "react";
 import { ArrowUpRight, Compass, Loader2 } from "lucide-react";
+import { useTheme } from "@/lib/theme";
 
 type LiveMapProps = {
-  /** The URL to embed (must allow framing). */
+  /** The URL to embed (must allow framing). Used as the light-mode src
+   *  when `srcDark` is also provided. */
   src: string;
+  /** Optional dark-mode src. When the active theme is `dark` and this is
+   *  set, the iframe swaps to it. The skeleton overlay re-shows during
+   *  the swap so theme changes feel intentional, not janky. */
+  srcDark?: string;
   /** Accessibility title for the iframe. */
   title: string;
   /** Short label shown in the card header. */
@@ -22,6 +28,7 @@ type LiveMapProps = {
 
 export function LiveMap({
   src,
+  srcDark,
   title,
   label,
   sub,
@@ -29,8 +36,23 @@ export function LiveMap({
   showOpenLink = true,
   className = "",
 }: LiveMapProps) {
+  const { theme } = useTheme();
+  const resolvedSrc = theme === "dark" && srcDark ? srcDark : src;
+
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
+
+  // Reset loading + error state when the resolved URL changes (theme swap).
+  // This is the official React 19 reset-on-prop-change pattern — setting
+  // state during render bails out of the current render and re-runs.
+  // It avoids the react-hooks/set-state-in-effect rule entirely.
+  const [trackedSrc, setTrackedSrc] = useState(resolvedSrc);
+  if (trackedSrc !== resolvedSrc) {
+    setTrackedSrc(resolvedSrc);
+    setLoaded(false);
+    setErrored(false);
+  }
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   return (
@@ -60,7 +82,7 @@ export function LiveMap({
           </span>
           {showOpenLink ? (
             <a
-              href={src}
+              href={resolvedSrc}
               target="_blank"
               rel="noopener noreferrer"
               className="group inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold text-ink-700 transition hover:border-gulf-400/50 hover:text-ink-900 dark:border-white/10 dark:text-ink-100 dark:hover:text-white"
@@ -99,7 +121,7 @@ export function LiveMap({
         {!errored ? (
           <iframe
             ref={iframeRef}
-            src={src}
+            src={resolvedSrc}
             title={title}
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
@@ -115,7 +137,7 @@ export function LiveMap({
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
             <p className="font-display text-sm font-semibold text-ink-100">Couldn’t load the live map</p>
             <a
-              href={src}
+              href={resolvedSrc}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary"

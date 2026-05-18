@@ -53,6 +53,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/*
+          Tell the Dark Reader browser extension to leave this site alone:
+          we already implement a designed dark theme (see <ThemeToggle /> +
+          tailwind.config.ts gulf/ink/sand palettes), and Dark Reader's
+          inversion fights it AND injects DOM attributes pre-hydration that
+          trigger React hydration mismatches.
+          https://github.com/darkreader/darkreader#how-to-disable-dark-reader-on-some-pages
+        */}
+        <meta name="darkreader-lock" />
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_INIT_CODE}
         </Script>
