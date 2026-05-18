@@ -51,6 +51,7 @@ const steps = [
     title: "Set up a daily-carry companion",
     body: "Get a MeshCore companion on your belt or in your bag — paired with your phone, ready to message neighbors.",
     links: [
+      { label: "Setup wizard", href: "/setup", internal: true },
       { label: "Companion setup guide", href: "https://docs.gulfcoastmesh.org/setting-up-meshcore-companion/" },
       { label: "Frequency settings", href: "https://docs.gulfcoastmesh.org/freq-settings/" },
     ],
@@ -61,6 +62,7 @@ const steps = [
     title: "Or stand up a repeater",
     body: "Have a place with sky? Run a repeater and extend the network. We’ll help you plan, build, and tune it.",
     links: [
+      { label: "Setup wizard", href: "/setup", internal: true },
       { label: "Repeater setup", href: "https://docs.gulfcoastmesh.org/meshcore-repeater-setup/" },
       { label: "Estimate coverage", href: "https://docs.gulfcoastmesh.org/estimate-coverage-with-meshmapper/" },
     ],
@@ -175,7 +177,8 @@ export default async function HomePage() {
           <div className="lg:col-span-7">
             <div className="relative">
               <LiveMap
-                src="https://explorer.gulfcoastmesh.org/embed"
+                src="https://explorer.gulfcoastmesh.org/embed-light"
+                srcDark="https://explorer.gulfcoastmesh.org/embed-dark"
                 title="Gulf Coast Mesh — Explorer (live)"
                 label="Gulf Coast Explorer"
                 sub={
@@ -357,20 +360,38 @@ export default async function HomePage() {
               <p className="mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">{s.body}</p>
               {s.links?.length ? (
                 <ul className="mt-5 flex flex-wrap gap-2 border-t border-ink-200/60 pt-4 dark:border-white/10">
-                  {s.links.map((l) => (
-                    <li key={l.href}>
-                      <a
-                        href={l.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group/link inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-gulf-700 transition hover:border-gulf-400/60 hover:bg-gulf-500/5 dark:border-white/10 dark:text-gulf-300"
-                        style={{ borderColor: "rgb(var(--line) / 0.7)" }}
-                      >
-                        {l.label}
-                        <ArrowUpRight className="h-3 w-3 transition group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" aria-hidden />
-                      </a>
-                    </li>
-                  ))}
+                  {s.links.map((l) => {
+                    const linkClass =
+                      "group/link inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-gulf-700 transition hover:border-gulf-400/60 hover:bg-gulf-500/5 dark:border-white/10 dark:text-gulf-300";
+                    const linkStyle = { borderColor: "rgb(var(--line) / 0.7)" };
+                    const arrow = (
+                      <ArrowUpRight
+                        className="h-3 w-3 transition group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5"
+                        aria-hidden
+                      />
+                    );
+                    return (
+                      <li key={l.href}>
+                        {l.internal ? (
+                          <Link href={l.href} className={linkClass} style={linkStyle}>
+                            {l.label}
+                            {arrow}
+                          </Link>
+                        ) : (
+                          <a
+                            href={l.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={linkClass}
+                            style={linkStyle}
+                          >
+                            {l.label}
+                            {arrow}
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : null}
             </li>
