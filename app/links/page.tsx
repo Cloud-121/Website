@@ -1,285 +1,317 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import {
+  Antenna,
+  ArrowUpRight,
+  BookOpen,
+  CalendarCheck,
+  Coffee,
+  Compass,
+  Cpu,
+  Github,
+  Hammer,
+  Hash,
+  Heart,
+  Key,
+  Map as MapIcon,
+  MessageSquare,
+  Radar,
+  Radio,
+  Router,
+  Settings2,
+  ShieldCheck,
+  Smartphone,
+  Wrench,
+} from "lucide-react";
 
-// ---------------- THEME HOOK ----------------
-type Theme = "light" | "dark";
-
-const useTheme = () => {
-  const getInitialTheme = (): Theme => {
-    if (typeof window !== "undefined" && window.localStorage) {
-      const storedTheme = window.localStorage.getItem("theme");
-      return (storedTheme as Theme) || "light";
-    }
-    return "light";
-  };
-
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
-
-  const rawSetTheme = (newTheme: Theme) => {
-    const root = window.document.documentElement;
-    const isDark = newTheme === "dark";
-
-    root.classList.remove(isDark ? "light" : "dark");
-    root.classList.add(isDark ? "dark" : "light");
-
-    window.localStorage.setItem("theme", newTheme);
-  };
-
-  useEffect(() => {
-    rawSetTheme(theme);
-  }, [theme]);
-
-  return [theme, setTheme] as const;
+export const metadata = {
+  title: "Resources",
+  description:
+    "Gulf Coast Mesh guides, Meshtastic upstream tools, and ways to support the community.",
 };
 
-// ---------------- NAVBAR ----------------
-type NavbarProps = {
-  theme: Theme;
-  setTheme: React.Dispatch<React.SetStateAction<Theme>>;
-};
-
-const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Docs", href: "https://docs.gulfcoastmesh.org" },
-  { label: "Mesh Map", href: "/meshmap" },
-  { label: "Discord", href: "https://discord.gulfcoastmesh.org", external: true },
-  { label: "GitHub", href: "https://github.com/LouisianaMeshCommunity/Website", external: true },
-];
-
-const Navbar = ({ theme, setTheme }: NavbarProps) => {
-  const [navOpen, setNavOpen] = useState(false);
-
-  return (
-    <nav className="fixed top-0 left-0 w-full z-30 bg-gray-900 dark:bg-gray-900">
-      <div className="max-w-6xl mx-auto flex justify-between items-center px-4 py-3">
-        <Link
-          href="/"
-          className="text-xl font-bold text-white drop-shadow dark:text-gray-100"
-        >
-          Gulf Mesh
-        </Link>
-
-        {/* Desktop Menu */}
-        <div className="hidden md:flex space-x-6 items-center text-white dark:text-gray-100 font-medium">
-          {navLinks.map(({ label, href, external }) =>
-            external ? (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-indigo-300 transition"
-              >
-                {label}
-              </a>
-            ) : (
-              <Link
-                key={label}
-                href={href}
-                className="hover:text-indigo-300 transition"
-              >
-                {label}
-              </Link>
-            )
-          )}
-
-          {/* Theme Toggle */}
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label="Toggle theme"
-            className="ml-4 p-2 rounded-full bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 text-white shadow transition-transform duration-300 hover:scale-110"
-          >
-            {theme === "dark" ? (
-              <Image
-                className="h-5 w-5"
-                src="https://www.svgrepo.com/show/508131/moon.svg"
-                alt="Moon"
-                width={20}
-                height={20}
-              />
-            ) : (
-              <Image
-                className="h-5 w-5"
-                src="https://www.svgrepo.com/show/535669/sun.svg"
-                alt="Sun"
-                width={20}
-                height={20}
-              />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setNavOpen(!navOpen)}
-          aria-label="Toggle navigation"
-          className="md:hidden p-2 rounded-lg text-white hover:bg-white/20 transition"
-        >
-          {navOpen ? (
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      {/* Mobile Dropdown */}
-      {navOpen && (
-        <div className="md:hidden bg-black/70 text-white px-4 py-3 space-y-2 backdrop-blur-sm">
-          {navLinks.map(({ label, href, external }) =>
-            external ? (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block hover:text-indigo-300 transition"
-                onClick={() => setNavOpen(false)}
-              >
-                {label}
-              </a>
-            ) : (
-              <Link
-                key={label}
-                href={href}
-                className="block hover:text-indigo-300 transition"
-                onClick={() => setNavOpen(false)}
-              >
-                {label}
-              </Link>
-            )
-          )}
-
-          <button
-            onClick={() => {
-              setTheme(theme === "dark" ? "light" : "dark");
-              setNavOpen(false);
-            }}
-            className="mt-3 p-2 rounded-lg bg-white/20 hover:bg-white/30"
-          >
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </button>
-        </div>
-      )}
-    </nav>
-  );
-};
-
-interface LinkItem {
+type Resource = {
   title: string;
   description: string;
-  url: string;
-  icon: React.ReactNode;
-}
-
-// --- LINKS PAGE COMPONENT ---
-const LinksPage = () => {
-  const [theme, setTheme] = useTheme();
-
-  const links: LinkItem[] = [
-    {
-      title: "Meshtastic.org",
-      description: "The official website and home base for the Meshtastic project.",
-      url: "https://meshtastic.org/",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2L2 21h20L12 2zm0 14h.01M12 11V8" />
-        </svg>
-      ),
-    },
-    {
-      title: "Web Flasher",
-      description: "Flash your Meshtastic device firmware directly from your browser.",
-      url: "https://github.com/meshtastic/web-flasher",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M5 20a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3l-2 2h-3.5L10 22l-2-2H5z" />
-          <path d="M12 11V6M12 18v-4" />
-        </svg>
-      ),
-    },
-    {
-      title: "Meshtastic Docs",
-      description: "Official documentation for setup, usage, and advanced features.",
-      url: "https://docs.meshtastic.org/",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-        </svg>
-      ),
-    },
-    {
-      title: "Support Gulf Coast Mesh",
-      description: "A place to buy stickers and dontate to the community.",
-      url: "https://ko-fi.com/louisianameshcommunity",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 21L12 5 5 21 5 19zm0-3L12 18l7 7M12 18v3h6v-3z" />
-        </svg>
-      ),
-    },
-  ];
-
-  return (
-    <>
-      <Navbar theme={theme} setTheme={setTheme} />
-
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-100 to-yellow-200 dark:from-gray-900 dark:to-gray-950 px-6 py-24 sm:py-32 transition-all duration-300">
-        <div className="max-w-4xl w-full">
-          {/* Main Content */}
-          <header className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-800 dark:text-white mb-4 drop-shadow-lg">
-              Gulf Mesh Links
-            </h1>
-            <p className="text-lg text-gray-700 dark:text-gray-300">
-              A curated collection of resources for the Louisiana Mesh community.
-            </p>
-          </header>
-
-          {/* Links Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {links.map((link) => (
-              <a
-                key={link.title}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 border-b-4 border-indigo-500 hover:border-indigo-400"
-              >
-                <div className="mb-4 text-indigo-500 transition-transform duration-300 group-hover:scale-110">
-                  {link.icon}
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
-                  {link.title}
-                </h2>
-                <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  {link.description}
-                </p>
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
-  );
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tag: string;
+  accent: string;
 };
 
-export default LinksPage;
+const guides: Resource[] = [
+  {
+    title: "MeshCore frequency settings",
+    description: "How to switch your radio to the Gulf Coast Mesh frequency settings used across Louisiana.",
+    href: "https://docs.gulfcoastmesh.org/freq-settings/",
+    icon: Settings2,
+    tag: "Required reading",
+    accent: "from-gulf-400/25 to-gulf-600/10",
+  },
+  {
+    title: "Louisiana channels",
+    description: "Channel layout the local network runs on — primary, secondary, and special-purpose.",
+    href: "https://docs.gulfcoastmesh.org/channels/",
+    icon: Hash,
+    tag: "Config",
+    accent: "from-sky-400/25 to-gulf-500/10",
+  },
+  {
+    title: "Recommended devices",
+    description: "Shopping list for your first Meshtastic / MeshCore radio — and good upgrade picks.",
+    href: "https://docs.gulfcoastmesh.org/devicerecs/",
+    icon: Cpu,
+    tag: "Buy",
+    accent: "from-violet-400/25 to-gulf-500/10",
+  },
+  {
+    title: "Antenna guide",
+    description: "Which antenna to use for handhelds, base stations, and repeater builds.",
+    href: "https://docs.gulfcoastmesh.org/antenna/",
+    icon: Antenna,
+    tag: "RF",
+    accent: "from-emerald-400/25 to-gulf-500/10",
+  },
+  {
+    title: "MeshCore companion setup",
+    description: "Set up a MeshCore device for daily carry — paired with your phone.",
+    href: "https://docs.gulfcoastmesh.org/setting-up-meshcore-companion/",
+    icon: Smartphone,
+    tag: "Guide",
+    accent: "from-sand-400/25 to-gulf-500/10",
+  },
+  {
+    title: "MeshCore repeater setup",
+    description: "Build a repeater node to help extend the network across the coast.",
+    href: "https://docs.gulfcoastmesh.org/meshcore-repeater-setup/",
+    icon: Router,
+    tag: "Guide",
+    accent: "from-fuchsia-400/25 to-gulf-500/10",
+  },
+];
+
+const deepDives: Resource[] = [
+  {
+    title: "DIY repeater builds",
+    description: "Reference designs and parts lists for community-built repeaters.",
+    href: "https://docs.gulfcoastmesh.org/diy-repeater-builds/",
+    icon: Hammer,
+    tag: "Build",
+    accent: "from-sand-400/25 to-coral-500/10",
+  },
+  {
+    title: "Estimate coverage with Meshmapper",
+    description: "Predict how far a node will reach before you climb the tower.",
+    href: "https://docs.gulfcoastmesh.org/estimate-coverage-with-meshmapper/",
+    icon: Radar,
+    tag: "Planning",
+    accent: "from-emerald-400/25 to-gulf-500/10",
+  },
+  {
+    title: "Change a repeater public key",
+    description: "Rotate a MeshCore repeater key without losing your spot on the network.",
+    href: "https://docs.gulfcoastmesh.org/change-repeater-public-key/",
+    icon: Key,
+    tag: "Advanced",
+    accent: "from-violet-400/25 to-gulf-500/10",
+  },
+  {
+    title: "Community transparency",
+    description: "How the project operates, who runs it, and where the money goes.",
+    href: "https://docs.gulfcoastmesh.org/transparency/",
+    icon: ShieldCheck,
+    tag: "About",
+    accent: "from-ink-400/25 to-gulf-500/10",
+  },
+];
+
+const community: Resource[] = [
+  {
+    title: "Discord",
+    description:
+      "Real-time chat plus our weekly Monday voice meeting — the fastest way to get help and meet operators.",
+    href: "https://discord.gulfcoastmesh.org",
+    icon: MessageSquare,
+    tag: "Community",
+    accent: "from-indigo-400/25 to-gulf-500/10",
+  },
+  {
+    title: "GitHub",
+    description: "Source code for the website, docs, and supporting tooling — patches welcome.",
+    href: "https://github.com/GulfCoastMesh",
+    icon: Github,
+    tag: "Open source",
+    accent: "from-ink-400/25 to-gulf-500/10",
+  },
+  {
+    title: "Support on Ko-fi",
+    description: "Stickers, donations, and ways to thank the volunteers who keep the network growing.",
+    href: "https://ko-fi.com/louisianameshcommunity",
+    icon: Coffee,
+    tag: "Support",
+    accent: "from-coral-400/25 to-sand-500/10",
+  },
+];
+
+const upstream: Resource[] = [
+  {
+    title: "Meshtastic.org",
+    description: "The official home of the Meshtastic project — firmware, clients, and community hubs.",
+    href: "https://meshtastic.org/",
+    icon: Radio,
+    tag: "Upstream",
+    accent: "from-gulf-400/25 to-gulf-600/10",
+  },
+  {
+    title: "Meshtastic web flasher",
+    description: "Flash Meshtastic firmware from your browser — no toolchain required.",
+    href: "https://github.com/meshtastic/web-flasher",
+    icon: Wrench,
+    tag: "Tool",
+    accent: "from-sky-400/25 to-gulf-500/10",
+  },
+  {
+    title: "Meshtastic docs",
+    description: "Setup guides, advanced features, and troubleshooting straight from upstream.",
+    href: "https://docs.meshtastic.org/",
+    icon: BookOpen,
+    tag: "Docs",
+    accent: "from-violet-400/25 to-gulf-500/10",
+  },
+];
+
+export default function LinksPage() {
+  return (
+    <div className="container pb-24">
+      <header className="mx-auto max-w-2xl text-center">
+        <span className="eyebrow mx-auto">
+          <Compass className="h-3.5 w-3.5" aria-hidden />
+          Resources
+        </span>
+        <h1 className="mt-5 font-display text-display-xl font-semibold tracking-tight text-balance text-ink-900 dark:text-white">
+          Gulf Coast toolkit.
+        </h1>
+        <p className="mt-5 text-pretty text-lg text-ink-600 dark:text-ink-300">
+          Our own field guides for getting on the mesh, plus the upstream Meshtastic resources and the places we hang
+          out as a community.
+        </p>
+
+        <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-xs text-ink-600 dark:border-white/10 dark:text-ink-300"
+             style={{ borderColor: "rgb(var(--line) / 0.7)" }}>
+          <CalendarCheck className="h-3.5 w-3.5 text-gulf-600 dark:text-gulf-300" />
+          Weekly Monday voice net on
+          <a
+            href="https://discord.gulfcoastmesh.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-gulf-700 hover:underline dark:text-gulf-300"
+          >
+            Discord
+          </a>
+          — everyone welcome.
+        </div>
+      </header>
+
+      {/* GULF COAST GUIDES */}
+      <Section
+        title="Gulf Coast guides"
+        kicker="Written and maintained by the community"
+        kickerIcon={MapIcon}
+      >
+        <Grid items={guides} columns="lg:grid-cols-3" />
+      </Section>
+
+      {/* DEEP DIVES */}
+      <Section
+        title="Deeper dives"
+        kicker="For when you’re ready to tinker"
+        kickerIcon={Hammer}
+      >
+        <Grid items={deepDives} columns="lg:grid-cols-4" />
+      </Section>
+
+      {/* COMMUNITY */}
+      <Section title="Community" kicker="Where we hang out" kickerIcon={Heart}>
+        <Grid items={community} columns="lg:grid-cols-3" />
+      </Section>
+
+      {/* UPSTREAM */}
+      <Section title="Upstream & tooling" kicker="The wider Meshtastic / MeshCore world" kickerIcon={BookOpen}>
+        <Grid items={upstream} columns="lg:grid-cols-3" />
+      </Section>
+
+      <p className="mt-16 text-center text-sm text-ink-500 dark:text-ink-400">
+        <Link href="/" className="font-medium text-gulf-700 hover:underline dark:text-gulf-300">
+          ← Back to home
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  kicker,
+  kickerIcon: KickerIcon,
+  children,
+}: {
+  title: string;
+  kicker: string;
+  kickerIcon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mt-16">
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <p className="inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-gulf-700 dark:text-gulf-300">
+            <KickerIcon className="h-3.5 w-3.5" aria-hidden />
+            {kicker}
+          </p>
+          <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink-900 sm:text-3xl dark:text-white">
+            {title}
+          </h2>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Grid({ items, columns = "lg:grid-cols-3" }: { items: Resource[]; columns?: string }) {
+  return (
+    <div className={`grid gap-5 sm:grid-cols-2 ${columns}`}>
+      {items.map((it) => (
+        <a
+          key={it.title}
+          href={it.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="tile tile-accent group flex h-full flex-col justify-between"
+        >
+          <div>
+            <div className={`pointer-events-none absolute inset-0 -z-0 bg-gradient-to-br ${it.accent} opacity-70`} />
+            <div className="relative flex items-center justify-between">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/70 text-gulf-700 dark:bg-white/5 dark:text-gulf-300">
+                <it.icon className="h-6 w-6" />
+              </span>
+              <span
+                className="rounded-full border bg-white/70 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-700 dark:border-white/10 dark:bg-white/5 dark:text-ink-100"
+                style={{ borderColor: "rgb(var(--line) / 0.7)" }}
+              >
+                {it.tag}
+              </span>
+            </div>
+            <h3 className="relative mt-5 font-display text-lg font-semibold text-ink-900 dark:text-white">
+              {it.title}
+            </h3>
+            <p className="relative mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">{it.description}</p>
+          </div>
+          <span className="relative mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-gulf-700 dark:text-gulf-300">
+            Visit
+            <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
+          </span>
+        </a>
+      ))}
+    </div>
+  );
+}
