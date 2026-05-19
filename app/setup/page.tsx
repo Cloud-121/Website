@@ -981,6 +981,24 @@ export default function SetupWizard() {
           Plug in over USB, flash MeshCore, and join the network — right from your browser. Pick what you&apos;re building today.
         </p>
       </div>
+      {(browserKind === 'firefox' || browserKind === 'safari' || browserKind === 'ios') && (
+        <div
+          role="note"
+          className="mx-auto flex max-w-xl items-start gap-3 rounded-2xl border border-sand-400/40 bg-sand-400/10 p-4 text-left"
+        >
+          <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sand-700 dark:text-sand-300" aria-hidden />
+          <div>
+            <h3 className="font-display text-sm font-semibold text-ink-900 dark:text-white">
+              Chromium-based browser required
+            </h3>
+            <p className="mt-1 text-xs leading-relaxed text-ink-600 dark:text-ink-300">
+              The setup wizard uses the Web Serial API to talk to your radio over USB, which only works in
+              Chromium-based browsers — Chrome, Edge, Brave, Arc, Vivaldi, or Opera. Firefox and Safari (including
+              all iOS browsers) can&apos;t flash from the web yet.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2">
         <button
           type="button"

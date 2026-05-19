@@ -59,7 +59,7 @@ const steps = [
   {
     n: "03",
     icon: Router,
-    title: "Or stand up a repeater",
+    title: "Stand up a repeater",
     body: "Have a place with sky? Run a repeater and extend the network. We’ll help you plan, build, and tune it.",
     links: [
       { label: "Setup wizard", href: "/setup", internal: true },
