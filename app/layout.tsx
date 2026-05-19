@@ -76,6 +76,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <main className="flex-1 pt-28 sm:pt-32">{children}</main>
           <SiteFooter />
         </div>
+        <Script
+          async
+          src="https://static.getclicky.com/js"
+          data-id="101506255"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
