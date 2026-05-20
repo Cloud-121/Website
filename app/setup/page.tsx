@@ -71,11 +71,24 @@ function getServerBrowserKindSnapshot(): BrowserKind {
   return 'unknown';
 }
 
+// Flip to true when the in-browser setup wizard is ready for production.
+const SETUP_WIZARD_ENABLED = false;
+
+function SetupComingSoon() {
+  return (
+    <div className="container pb-24">
+      <p className="py-24 text-center font-display text-2xl font-semibold text-ink-900 dark:text-white">
+        Coming soon
+      </p>
+    </div>
+  );
+}
+
 // ==========================================
 // WIZARD UI COMPONENT
 // ==========================================
 
-export default function SetupWizard() {
+function SetupWizard() {
   type SerialCommandSpec = {
     command: string;
     fallbackCommands?: string[];
@@ -2015,4 +2028,9 @@ export default function SetupWizard() {
       )}
     </div>
   );
+}
+
+export default function SetupPage() {
+  if (!SETUP_WIZARD_ENABLED) return <SetupComingSoon />;
+  return <SetupWizard />;
 }
