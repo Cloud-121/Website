@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SettingsChangeBanner } from "@/components/settings-change-banner";
 import { THEME_INIT_CODE } from "@/components/theme-script";
 
 const sans = Inter({
@@ -73,7 +74,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <div className="pointer-events-none fixed inset-0 z-0 bg-noise" aria-hidden />
         <div className="relative z-10 flex min-h-screen flex-col">
           <SiteHeader />
-          <main className="flex-1 pt-28 sm:pt-32">{children}</main>
+          <main className="flex-1 pt-28 sm:pt-32">
+            <SettingsChangeBanner />
+            {children}
+          </main>
           <SiteFooter />
         </div>
         <Script
