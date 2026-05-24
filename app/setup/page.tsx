@@ -78,7 +78,7 @@ function SetupComingSoon() {
   return (
     <div className="container pb-24">
       <p className="py-24 text-center font-display text-2xl font-semibold text-ink-900 dark:text-white">
-        Coming soon
+        Coming soon™
       </p>
     </div>
   );
@@ -1091,7 +1091,7 @@ function SetupWizard() {
             >
               {!d.supported && (
                 <span className="absolute right-2 top-2 rounded-full border bg-white/70 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:border-white/10 dark:bg-white/5 dark:text-ink-400" style={{ borderColor: 'rgb(var(--line) / 0.6)' }}>
-                  Soon
+                  Soon™
                 </span>
               )}
               <span className={
@@ -1332,7 +1332,7 @@ function SetupWizard() {
             >
               {!d.supported && (
                 <span className="absolute right-2 top-2 rounded-full border bg-white/70 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-500 dark:border-white/10 dark:bg-white/5 dark:text-ink-400" style={{ borderColor: 'rgb(var(--line) / 0.6)' }}>
-                  Soon
+                  Soon™
                 </span>
               )}
               <span className={

@@ -195,6 +195,148 @@
   .dark .kbd {
     background: rgba(255, 255, 255, 0.06);
   }
+
+  /* ---- Docs prose ---- */
+  /* Wraps rendered Markdown on /docs. Built on @tailwindcss/typography so the
+     default `prose` styles cover lists, tables, code, etc., but every visible
+     color/font is re-bound to the site's design tokens so it matches the
+     surrounding marketing pages in both light and dark mode. */
+  .prose-mesh {
+    @apply prose max-w-none;
+    color: rgb(var(--fg));
+    --tw-prose-body: rgb(var(--fg));
+    --tw-prose-headings: rgb(var(--fg));
+    --tw-prose-lead: rgb(var(--fg-muted));
+    --tw-prose-bold: rgb(var(--fg));
+    --tw-prose-counters: rgb(var(--fg-muted));
+    --tw-prose-bullets: rgb(var(--fg-muted));
+    --tw-prose-hr: rgb(var(--line));
+    --tw-prose-quotes: rgb(var(--fg));
+    --tw-prose-quote-borders: theme("colors.gulf.400");
+    --tw-prose-captions: rgb(var(--fg-muted));
+    --tw-prose-code: rgb(var(--fg));
+    --tw-prose-pre-code: theme("colors.ink.50");
+    --tw-prose-pre-bg: theme("colors.ink.900");
+    --tw-prose-th-borders: rgb(var(--line));
+    --tw-prose-td-borders: rgb(var(--line));
+    --tw-prose-links: theme("colors.gulf.700");
+  }
+
+  .dark .prose-mesh {
+    --tw-prose-body: rgb(var(--fg));
+    --tw-prose-headings: rgb(var(--fg));
+    --tw-prose-lead: rgb(var(--fg-muted));
+    --tw-prose-bold: rgb(var(--fg));
+    --tw-prose-counters: rgb(var(--fg-muted));
+    --tw-prose-bullets: rgb(var(--fg-muted));
+    --tw-prose-hr: rgb(var(--line));
+    --tw-prose-quotes: rgb(var(--fg));
+    --tw-prose-quote-borders: theme("colors.gulf.400");
+    --tw-prose-captions: rgb(var(--fg-muted));
+    --tw-prose-code: rgb(var(--fg));
+    --tw-prose-pre-code: theme("colors.ink.50");
+    --tw-prose-pre-bg: theme("colors.ink.950");
+    --tw-prose-th-borders: rgb(var(--line));
+    --tw-prose-td-borders: rgb(var(--line));
+    --tw-prose-links: theme("colors.gulf.300");
+  }
+
+  .prose-mesh h1,
+  .prose-mesh h2,
+  .prose-mesh h3,
+  .prose-mesh h4 {
+    @apply font-display tracking-tight;
+  }
+
+  .prose-mesh h2 {
+    @apply mt-12 border-b pb-2;
+    border-color: rgb(var(--line) / 0.6);
+  }
+
+  .prose-mesh a {
+    @apply font-medium underline-offset-2 transition;
+  }
+
+  .prose-mesh a:hover {
+    @apply underline;
+  }
+
+  /* The autolink wrapper rehype-autolink-headings adds around headings: keep
+     headings looking like headings, no underline, no color shift. */
+  .prose-mesh a.doc-heading-anchor,
+  .prose-mesh a.doc-heading-anchor:hover {
+    @apply no-underline;
+    color: inherit;
+  }
+
+  .prose-mesh img {
+    @apply mx-auto rounded-2xl border shadow-soft;
+    border-color: rgb(var(--line) / 0.6);
+    background: rgba(255, 255, 255, 0.6);
+  }
+
+  .dark .prose-mesh img {
+    background: rgba(14, 31, 51, 0.4);
+  }
+
+  /* MkDocs-style blockquote → sand/amber callout, matching the
+     SettingsChangeBanner / Chromium notice look. */
+  .prose-mesh blockquote {
+    @apply not-italic rounded-2xl border px-5 py-4;
+    border-color: theme("colors.sand.400" / 40%);
+    background: theme("colors.sand.400" / 8%);
+    border-left-width: 1px;
+  }
+
+  .prose-mesh blockquote > :first-child {
+    margin-top: 0;
+  }
+
+  .prose-mesh blockquote > :last-child {
+    margin-bottom: 0;
+  }
+
+  .prose-mesh blockquote p {
+    @apply text-ink-700 dark:text-ink-200;
+  }
+
+  .prose-mesh blockquote strong {
+    @apply text-sand-700 dark:text-sand-300;
+  }
+
+  .prose-mesh :not(pre) > code {
+    @apply rounded-md border px-1.5 py-0.5 font-mono text-[0.85em];
+    border-color: rgb(var(--line) / 0.6);
+    background: rgba(17, 182, 164, 0.08);
+  }
+
+  .prose-mesh :not(pre) > code::before,
+  .prose-mesh :not(pre) > code::after {
+    content: "";
+  }
+
+  .prose-mesh pre {
+    @apply rounded-2xl border;
+    border-color: rgb(var(--line) / 0.6);
+  }
+
+  .prose-mesh table {
+    @apply rounded-xl border;
+    border-color: rgb(var(--line) / 0.6);
+    overflow: hidden;
+  }
+
+  .prose-mesh thead th {
+    background: rgba(17, 182, 164, 0.06);
+  }
+
+  .dark .prose-mesh thead th {
+    background: rgba(45, 209, 189, 0.08);
+  }
+
+  .prose-mesh hr {
+    border-color: rgb(var(--line) / 0.6);
+  }
 }
 
 @layer utilities {

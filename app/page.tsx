@@ -41,8 +41,8 @@ const steps = [
     title: "Pick your hardware",
     body: "New to LoRa? Start with our recommended devices and the antenna guide so your first radio just works.",
     links: [
-      { label: "Recommended devices", href: "https://docs.gulfcoastmesh.org/devicerecs/" },
-      { label: "Antenna guide", href: "https://docs.gulfcoastmesh.org/antenna/" },
+      { label: "Recommended devices", href: "/docs/devicerecs", internal: true },
+      { label: "Antenna guide", href: "/docs/antenna", internal: true },
     ],
   },
   {
@@ -52,8 +52,8 @@ const steps = [
     body: "Get a MeshCore companion on your belt or in your bag — paired with your phone, ready to message neighbors.",
     links: [
       { label: "Setup wizard", href: "/setup", internal: true },
-      { label: "Companion setup guide", href: "https://docs.gulfcoastmesh.org/setting-up-meshcore-companion/" },
-      { label: "Frequency settings", href: "https://docs.gulfcoastmesh.org/freq-settings/" },
+      { label: "Companion setup guide", href: "/docs/setting-up-meshcore-companion", internal: true },
+      { label: "Frequency settings", href: "/docs/freq-settings", internal: true },
     ],
   },
   {
@@ -63,8 +63,8 @@ const steps = [
     body: "Have a place with sky? Run a repeater and extend the network. We’ll help you plan, build, and tune it.",
     links: [
       { label: "Setup wizard", href: "/setup", internal: true },
-      { label: "Repeater setup", href: "https://docs.gulfcoastmesh.org/meshcore-repeater-setup/" },
-      { label: "Estimate coverage", href: "https://docs.gulfcoastmesh.org/estimate-coverage-with-meshmapper/" },
+      { label: "Repeater setup", href: "/docs/meshcore-repeater-setup", internal: true },
+      { label: "Estimate coverage", href: "/docs/estimate-coverage-with-meshmapper", internal: true },
     ],
   },
 ];
@@ -144,15 +144,13 @@ export default async function HomePage() {
                 See the live map
                 <MapIcon className="h-4 w-4 opacity-80" aria-hidden />
               </Link>
-              <a
-                href="https://docs.gulfcoastmesh.org"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/docs"
                 className="group ml-1 inline-flex items-center gap-1.5 text-sm font-medium text-ink-700 hover:text-ink-950 dark:text-ink-200 dark:hover:text-white"
               >
                 Read the docs
-                <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
-              </a>
+                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden />
+              </Link>
             </div>
 
             <p className="mt-5 inline-flex items-center gap-2 text-xs text-ink-600 dark:text-ink-300">
@@ -454,7 +452,7 @@ export default async function HomePage() {
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-sand-700 dark:border-white/10 dark:text-sand-300" style={{ borderColor: "rgb(var(--line) / 0.7)" }}>
                             <span className="h-1 w-1 rounded-full bg-sand-400" />
-                            Coming soon
+                            Coming soon™
                           </span>
                         )}
                       </div>
@@ -486,14 +484,9 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
-              <a
-                href="https://docs.gulfcoastmesh.org/freq-settings/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary"
-              >
+              <Link href="/docs/freq-settings" className="btn-primary">
                 Read the docs
-              </a>
+              </Link>
               <Link href="/meshmap" className="btn-ghost">
                 View live maps
               </Link>
