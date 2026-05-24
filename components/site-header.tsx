@@ -13,7 +13,7 @@ const nav: readonly NavItem[] = [
   { label: "Setup", href: "/setup" },
   { label: "Resources", href: "/links" },
   { label: "Newsletter", href: "/emailsignup" },
-  { label: "Docs", href: "https://docs.gulfcoastmesh.org", external: true },
+  { label: "Docs", href: "/docs" },
 ];
 
 export function SiteHeader() {

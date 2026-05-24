@@ -5,6 +5,8 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SettingsChangeBanner } from "@/components/settings-change-banner";
+import { NetworkUpdateModal } from "@/components/network-update-modal";
+import { AnalyticsScript } from "@/components/analytics-script";
 import { THEME_INIT_CODE } from "@/components/theme-script";
 
 const sans = Inter({
@@ -80,12 +82,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </main>
           <SiteFooter />
         </div>
-        <Script
-          async
-          src="https://static.getclicky.com/js"
-          data-id="101506255"
-          strategy="afterInteractive"
-        />
+        <NetworkUpdateModal />
+        <AnalyticsScript />
       </body>
     </html>
   );

@@ -151,14 +151,12 @@ export default function MeshmapPage() {
             Discord
           </a>{" "}
           or browse{" "}
-          <a
-            href="https://docs.gulfcoastmesh.org"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/docs"
             className="font-semibold text-gulf-700 underline-offset-4 hover:underline dark:text-gulf-300"
           >
             the docs
-          </a>
+          </Link>
           .
         </p>
       </section>

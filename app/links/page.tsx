@@ -36,13 +36,17 @@ type Resource = {
   icon: React.ComponentType<{ className?: string }>;
   tag: string;
   accent: string;
+  // When true, the card renders as a Next <Link> for client-side navigation
+  // instead of an external anchor with target="_blank".
+  internal?: boolean;
 };
 
 const guides: Resource[] = [
   {
     title: "MeshCore frequency settings",
     description: "How to switch your radio to the Gulf Coast Mesh frequency settings used across Louisiana.",
-    href: "https://docs.gulfcoastmesh.org/freq-settings/",
+    href: "/docs/freq-settings",
+    internal: true,
     icon: Settings2,
     tag: "Required reading",
     accent: "from-gulf-400/25 to-gulf-600/10",
@@ -50,7 +54,8 @@ const guides: Resource[] = [
   {
     title: "Louisiana channels",
     description: "Channel layout the local network runs on — primary, secondary, and special-purpose.",
-    href: "https://docs.gulfcoastmesh.org/channels/",
+    href: "/docs/channels",
+    internal: true,
     icon: Hash,
     tag: "Config",
     accent: "from-sky-400/25 to-gulf-500/10",
@@ -58,7 +63,8 @@ const guides: Resource[] = [
   {
     title: "Recommended devices",
     description: "Shopping list for your first Meshtastic / MeshCore radio — and good upgrade picks.",
-    href: "https://docs.gulfcoastmesh.org/devicerecs/",
+    href: "/docs/devicerecs",
+    internal: true,
     icon: Cpu,
     tag: "Buy",
     accent: "from-violet-400/25 to-gulf-500/10",
@@ -66,7 +72,8 @@ const guides: Resource[] = [
   {
     title: "Antenna guide",
     description: "Which antenna to use for handhelds, base stations, and repeater builds.",
-    href: "https://docs.gulfcoastmesh.org/antenna/",
+    href: "/docs/antenna",
+    internal: true,
     icon: Antenna,
     tag: "RF",
     accent: "from-emerald-400/25 to-gulf-500/10",
@@ -74,7 +81,8 @@ const guides: Resource[] = [
   {
     title: "MeshCore companion setup",
     description: "Set up a MeshCore device for daily carry — paired with your phone.",
-    href: "https://docs.gulfcoastmesh.org/setting-up-meshcore-companion/",
+    href: "/docs/setting-up-meshcore-companion",
+    internal: true,
     icon: Smartphone,
     tag: "Guide",
     accent: "from-sand-400/25 to-gulf-500/10",
@@ -82,7 +90,8 @@ const guides: Resource[] = [
   {
     title: "MeshCore repeater setup",
     description: "Build a repeater node to help extend the network across the coast.",
-    href: "https://docs.gulfcoastmesh.org/meshcore-repeater-setup/",
+    href: "/docs/meshcore-repeater-setup",
+    internal: true,
     icon: Router,
     tag: "Guide",
     accent: "from-fuchsia-400/25 to-gulf-500/10",
@@ -93,7 +102,8 @@ const deepDives: Resource[] = [
   {
     title: "DIY repeater builds",
     description: "Reference designs and parts lists for community-built repeaters.",
-    href: "https://docs.gulfcoastmesh.org/diy-repeater-builds/",
+    href: "/docs/diy-repeater-builds",
+    internal: true,
     icon: Hammer,
     tag: "Build",
     accent: "from-sand-400/25 to-coral-500/10",
@@ -101,7 +111,8 @@ const deepDives: Resource[] = [
   {
     title: "Estimate coverage with Meshmapper",
     description: "Predict how far a node will reach before you climb the tower.",
-    href: "https://docs.gulfcoastmesh.org/estimate-coverage-with-meshmapper/",
+    href: "/docs/estimate-coverage-with-meshmapper",
+    internal: true,
     icon: Radar,
     tag: "Planning",
     accent: "from-emerald-400/25 to-gulf-500/10",
@@ -109,7 +120,8 @@ const deepDives: Resource[] = [
   {
     title: "Change a repeater public key",
     description: "Rotate a MeshCore repeater key without losing your spot on the network.",
-    href: "https://docs.gulfcoastmesh.org/change-repeater-public-key/",
+    href: "/docs/change-repeater-public-key",
+    internal: true,
     icon: Key,
     tag: "Advanced",
     accent: "from-violet-400/25 to-gulf-500/10",
@@ -117,7 +129,8 @@ const deepDives: Resource[] = [
   {
     title: "Community transparency",
     description: "How the project operates, who runs it, and where the money goes.",
-    href: "https://docs.gulfcoastmesh.org/transparency/",
+    href: "/docs/transparency",
+    internal: true,
     icon: ShieldCheck,
     tag: "About",
     accent: "from-ink-400/25 to-gulf-500/10",
@@ -280,38 +293,51 @@ function Section({
 function Grid({ items, columns = "lg:grid-cols-3" }: { items: Resource[]; columns?: string }) {
   return (
     <div className={`grid gap-5 sm:grid-cols-2 ${columns}`}>
-      {items.map((it) => (
-        <a
-          key={it.title}
-          href={it.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="tile tile-accent group flex h-full flex-col justify-between"
-        >
-          <div>
-            <div className={`pointer-events-none absolute inset-0 -z-0 bg-gradient-to-br ${it.accent} opacity-70`} />
-            <div className="relative flex items-center justify-between">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/70 text-gulf-700 dark:bg-white/5 dark:text-gulf-300">
-                <it.icon className="h-6 w-6" />
-              </span>
-              <span
-                className="rounded-full border bg-white/70 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-700 dark:border-white/10 dark:bg-white/5 dark:text-ink-100"
-                style={{ borderColor: "rgb(var(--line) / 0.7)" }}
-              >
-                {it.tag}
-              </span>
+      {items.map((it) => {
+        const cardClass = "tile tile-accent group flex h-full flex-col justify-between";
+        const inner = (
+          <>
+            <div>
+              <div className={`pointer-events-none absolute inset-0 -z-0 bg-gradient-to-br ${it.accent} opacity-70`} />
+              <div className="relative flex items-center justify-between">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/70 text-gulf-700 dark:bg-white/5 dark:text-gulf-300">
+                  <it.icon className="h-6 w-6" />
+                </span>
+                <span
+                  className="rounded-full border bg-white/70 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-700 dark:border-white/10 dark:bg-white/5 dark:text-ink-100"
+                  style={{ borderColor: "rgb(var(--line) / 0.7)" }}
+                >
+                  {it.tag}
+                </span>
+              </div>
+              <h3 className="relative mt-5 font-display text-lg font-semibold text-ink-900 dark:text-white">
+                {it.title}
+              </h3>
+              <p className="relative mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">{it.description}</p>
             </div>
-            <h3 className="relative mt-5 font-display text-lg font-semibold text-ink-900 dark:text-white">
-              {it.title}
-            </h3>
-            <p className="relative mt-2 text-sm leading-relaxed text-ink-600 dark:text-ink-300">{it.description}</p>
-          </div>
-          <span className="relative mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-gulf-700 dark:text-gulf-300">
-            Visit
-            <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
-          </span>
-        </a>
-      ))}
+            <span className="relative mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-gulf-700 dark:text-gulf-300">
+              {it.internal ? "Open" : "Visit"}
+              <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
+            </span>
+          </>
+        );
+
+        return it.internal ? (
+          <Link key={it.title} href={it.href} className={cardClass}>
+            {inner}
+          </Link>
+        ) : (
+          <a
+            key={it.title}
+            href={it.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cardClass}
+          >
+            {inner}
+          </a>
+        );
+      })}
     </div>
   );
 }
