@@ -5,12 +5,35 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import type { Schema } from "hast-util-sanitize";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeStringify from "rehype-stringify";
 import { visit } from "unist-util-visit";
 import type { Element, Root } from "hast";
 import { getPageMeta } from "./docs-nav";
+
+// Sanitization schema: extend the default safe-HTML allowlist to keep the few
+// extras our pipeline adds (lazy-loading on <img>, anchor classes on heading
+// links). Anything not in this schema -- script, iframe, style, on* handlers,
+// javascript: URLs, etc. -- is stripped by rehype-sanitize. This is the
+// belt-and-suspenders against a compromised docs repo; the CSP is the belt.
+const docsSanitizeSchema: Schema = {
+  ...defaultSchema,
+  attributes: {
+    ...(defaultSchema.attributes ?? {}),
+    img: [
+      ...(defaultSchema.attributes?.img ?? []),
+      "loading",
+      "decoding",
+    ],
+    a: [
+      ...(defaultSchema.attributes?.a ?? []),
+      ["className", "doc-heading-anchor"],
+    ],
+  },
+};
 
 export {
   DOCS_HOME,
@@ -81,12 +104,13 @@ async function renderMarkdown(md: string): Promise<string> {
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
     .use(rewriteAssets)
+    .use(rehypeSanitize, docsSanitizeSchema)
     .use(rehypeSlug)
     .use(rehypeAutolinkHeadings, {
       behavior: "wrap",
       properties: { className: ["doc-heading-anchor"] },
     })
-    .use(rehypeStringify, { allowDangerousHtml: true })
+    .use(rehypeStringify, { allowDangerousHtml: false })
     .process(md);
   return String(file);
 }

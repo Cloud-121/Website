@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -7,24 +8,33 @@ import { SiteFooter } from "@/components/site-footer";
 import { SettingsChangeBanner } from "@/components/settings-change-banner";
 import { NetworkUpdateModal } from "@/components/network-update-modal";
 import { AnalyticsScript } from "@/components/analytics-script";
-import { THEME_INIT_CODE } from "@/components/theme-script";
 
+// preload: false skips the <link rel="preload"> hint for each font and loads
+// it lazily via @font-face when the CSS that references it is parsed. We do
+// this for all three families because dev-mode compilation is slow enough
+// that preloads often expire before the browser claims them, producing
+// "preloaded with link preload was not used within a few seconds" warnings.
+// `display: "swap"` keeps text visible the whole time using the fallback
+// stack; the swap to the web font happens whenever it lands.
 const sans = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
+  preload: false,
 });
 
 const display = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
+  preload: false,
 });
 
 const mono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -52,9 +62,16 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Reading the request headers opts the layout into dynamic rendering, which
+  // is required for the per-request CSP nonce from proxy.ts to flow into the
+  // <Script> tag below and into Next's own internal inline scripts. Without
+  // this, the static HTML would ship with no nonce attributes and the strict
+  // CSP would block React hydration entirely.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         {/*
           Tell the Dark Reader browser extension to leave this site alone:
@@ -65,9 +82,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           https://github.com/darkreader/darkreader#how-to-disable-dark-reader-on-some-pages
         */}
         <meta name="darkreader-lock" />
-        <Script id="theme-init" strategy="beforeInteractive">
-          {THEME_INIT_CODE}
-        </Script>
+        <Script src="/theme-init.js" strategy="beforeInteractive" nonce={nonce} />
       </head>
       <body
         className={`${sans.variable} ${display.variable} ${mono.variable} bg-canvas relative min-h-screen font-sans text-ink-900 antialiased dark:text-ink-50`}
@@ -83,7 +98,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <SiteFooter />
         </div>
         <NetworkUpdateModal />
-        <AnalyticsScript />
+        <AnalyticsScript nonce={nonce} />
       </body>
     </html>
   );

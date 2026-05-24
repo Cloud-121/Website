@@ -125,6 +125,7 @@ export function LiveMap({
             title={title}
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             allow="geolocation; fullscreen"
             onLoad={() => setLoaded(true)}
             onError={() => setErrored(true)}
