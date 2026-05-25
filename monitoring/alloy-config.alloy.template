@@ -1,0 +1,86 @@
+// Grafana Alloy config for the Gulf Coast Mesh production VPS.
+// Renders to /etc/alloy/config.alloy. Do not commit the rendered version -
+// it contains a Grafana Cloud write token.
+//
+// Placeholders (filled by render-alloy-config.sh from env vars):
+//   <PROM_URL>           hosted Prometheus remote_write URL
+//   <PROM_USERNAME>      hosted Prometheus instance ID (numeric)
+//   <PROM_TOKEN>         token with metrics:write scope (glc_...)
+//   <LOKI_URL>           hosted Loki push URL
+//   <LOKI_USERNAME>      hosted Loki instance ID (numeric)
+//   <LOKI_TOKEN>         token with logs:write scope (glc_...)
+//
+// PROM_TOKEN and LOKI_TOKEN can be the same value (one access-policy
+// token with both scopes) or different values (one write-only data-
+// source token per destination - least privilege).
+
+// ---------------------------------------------------------------------------
+// 1. node_exporter scrape -> hosted Prometheus
+// ---------------------------------------------------------------------------
+
+prometheus.scrape "node_exporter" {
+  targets = [
+    { __address__ = "127.0.0.1:9100", instance = "gulfcoast-mesh-vps" },
+  ]
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "60s"
+  job_name        = "node_exporter"
+}
+
+// ---------------------------------------------------------------------------
+// 2. Alloy self-metrics scrape -> hosted Prometheus
+//    Lets you watch the collector itself in Grafana (queue depth, WAL size,
+//    remote_write retries). Cheap, ~30 series.
+// ---------------------------------------------------------------------------
+
+prometheus.exporter.self "alloy" {}
+
+prometheus.scrape "alloy_self" {
+  targets         = prometheus.exporter.self.alloy.targets
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "60s"
+  job_name        = "alloy"
+}
+
+// ---------------------------------------------------------------------------
+// 3. Remote write to Grafana Cloud hosted Prometheus
+// ---------------------------------------------------------------------------
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = "__PROM_URL__"
+    basic_auth {
+      username = "__PROM_USERNAME__"
+      password = "__PROM_TOKEN__"
+    }
+  }
+  external_labels = {
+    host = "gulfcoast-mesh-vps",
+    env  = "prod",
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 4. systemd journal -> hosted Loki
+//    Streams journald straight up. max_age = "12h" caps how far back we
+//    will pull on a cold start so a restart does not republish weeks of logs.
+// ---------------------------------------------------------------------------
+
+loki.source.journal "system" {
+  forward_to = [loki.write.grafana_cloud.receiver]
+  labels = {
+    job  = "systemd-journal",
+    host = "gulfcoast-mesh-vps",
+  }
+  max_age = "12h"
+}
+
+loki.write "grafana_cloud" {
+  endpoint {
+    url = "__LOKI_URL__"
+    basic_auth {
+      username = "__LOKI_USERNAME__"
+      password = "__LOKI_TOKEN__"
+    }
+  }
+}

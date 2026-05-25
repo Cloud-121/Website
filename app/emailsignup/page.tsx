@@ -27,7 +27,7 @@ export default function EmailSignupPage() {
     if (formData.get("weekly")) params.append("l", NEWS_LIST_ID);
 
     try {
-      await fetch("https://lists.louisianamesh.org/subscription/form", {
+      await fetch("https://lists.gulfcoastmesh.org/subscription/form", {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
