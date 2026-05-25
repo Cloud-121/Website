@@ -32,8 +32,9 @@ function buildCsp(nonce: string): string {
   const connectSrc = [
     "connect-src 'self'",
     "https://in.getclicky.com",
-    "https://lists.louisianamesh.org",
+    "https://lists.gulfcoastmesh.org",
     "https://explorer.gulfcoastmesh.org",
+    "https://meeting.gulfcoastmesh.org",
     "https://raw.githubusercontent.com",
     // Turbopack / webpack HMR websocket in dev.
     ...(isDev ? ["ws://localhost:*", "ws://127.0.0.1:*", "wss://localhost:*"] : []),
@@ -43,7 +44,7 @@ function buildCsp(nonce: string): string {
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
-    "form-action 'self' https://lists.louisianamesh.org",
+    "form-action 'self' https://lists.gulfcoastmesh.org",
     "frame-ancestors 'none'",
     ...(isDev ? [] : ["upgrade-insecure-requests"]),
     scriptSrc,

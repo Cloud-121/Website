@@ -10,6 +10,7 @@ type NavItem = { label: string; href: string; external?: boolean };
 const nav: readonly NavItem[] = [
   { label: "Network", href: "/#network" },
   { label: "Maps", href: "/meshmap" },
+  { label: "Meetings", href: "/meetings" },
   { label: "Setup", href: "/setup" },
   { label: "Resources", href: "/links" },
   { label: "Newsletter", href: "/emailsignup" },

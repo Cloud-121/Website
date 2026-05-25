@@ -185,7 +185,7 @@ documented on the maps and resources pages.
 ## Newsletter signup
 
 `/emailsignup` is wired up to **Listmonk** at
-`https://lists.louisianamesh.org/subscription/form` (POST, `no-cors`). Two
+`https://lists.gulfcoastmesh.org/subscription/form` (POST, `no-cors`). Two
 list IDs live at the top of `app/emailsignup/page.tsx`:
 
 - `ALERTS_LIST_ID` — required, posted on every submit.
