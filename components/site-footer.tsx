@@ -114,9 +114,6 @@ export function SiteFooter() {
             <Link href="/meshmap" className="hover:text-ink-900 dark:hover:text-white">
               Live maps
             </Link>
-            <Link href="/links" className="hover:text-ink-900 dark:hover:text-white">
-              Resources
-            </Link>
             <Link href="/emailsignup" className="hover:text-ink-900 dark:hover:text-white">
               Newsletter
             </Link>

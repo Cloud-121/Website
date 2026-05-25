@@ -10,18 +10,19 @@ import {
 
 import { MeetingsCalendar } from "@/components/meetings-calendar";
 import { NextMeetingCard } from "@/components/next-meeting-card";
+import { MEETING_TIME_LABEL } from "@/lib/meeting-schedule";
 import {
   absoluteAgendaUrl,
-  formatTimeEt,
+  formatTimeCst,
   getPublishedMeetingsWithRecap,
-  meetingDateKeyEt,
+  meetingDateKeyCst,
   type PublicMeetingWithRecap,
 } from "@/lib/meetings";
 
 export const metadata = {
   title: "Meetings",
   description:
-    "Weekly Gulf Coast Mesh voice meeting — every Monday 7:30 - 10:00 PM ET — plus the archive of past published meetings with YouTube recaps and agendas.",
+    `Weekly Gulf Coast Mesh voice meeting — every Monday ${MEETING_TIME_LABEL} — plus the archive of past published meetings with YouTube recaps and agendas.`,
 };
 
 export const revalidate = 300;
@@ -29,15 +30,15 @@ export const revalidate = 300;
 export default async function MeetingsPage() {
   const meetings = await getPublishedMeetingsWithRecap();
 
-  // ET-date keyed lookup powers the calendar's "is this Monday published?"
-  // logic. We bucket by the meeting's starting day in America/New_York so a
+  // CST-date keyed lookup powers the calendar's "is this Monday published?"
+  // logic. We bucket by the meeting's starting day in America/Chicago so a
   // meeting that crosses midnight UTC still maps to the correct Monday cell.
   const publishedByDateKey: Record<
     string,
     { id: string; youtubeUrl: string; dateLabel: string }
   > = {};
   for (const m of meetings) {
-    const key = meetingDateKeyEt(m.startedAt);
+    const key = meetingDateKeyCst(m.startedAt);
     if (key && m.youtubeUrl) {
       publishedByDateKey[key] = {
         id: m.id,
@@ -59,7 +60,7 @@ export default async function MeetingsPage() {
         </h1>
         <p className="mt-5 text-pretty text-lg text-ink-600 dark:text-ink-300">
           The Gulf Coast Mesh voice meeting runs every Monday from{" "}
-          <span className="font-semibold text-ink-800 dark:text-ink-100">7:30 - 10:00 PM ET</span>{" "}
+          <span className="font-semibold text-ink-800 dark:text-ink-100">{MEETING_TIME_LABEL}</span>{" "}
           on Discord. New operators welcome — drop in, listen, or hop on mic.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
@@ -132,9 +133,9 @@ export default async function MeetingsPage() {
 }
 
 function PastMeetingCard({ meeting }: { meeting: PublicMeetingWithRecap }) {
-  const startedAt = formatTimeEt(meeting.startedAt);
-  const endedAt = formatTimeEt(meeting.endedAt);
-  const timeRange = startedAt && endedAt ? `${startedAt} - ${endedAt} ET` : null;
+  const startedAt = formatTimeCst(meeting.startedAt);
+  const endedAt = formatTimeCst(meeting.endedAt);
+  const timeRange = startedAt && endedAt ? `${startedAt} - ${endedAt} CST` : null;
 
   return (
     <li className="tile group flex h-full flex-col">
