@@ -13,7 +13,6 @@ const nav: readonly NavItem[] = [
   { label: "Meetings", href: "/meetings" },
   { label: "Setup", href: "/setup" },
   { label: "Mesh Monitor", href: "https://meshbuddy.gulfcoastmesh.org/", external: true },
-  { label: "Resources", href: "/links" },
   { label: "Newsletter", href: "/emailsignup" },
   { label: "Docs", href: "/docs" },
 ];

@@ -48,6 +48,9 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [{ source: "/links", destination: "/docs", permanent: true }];
+  },
 };
 
 export default nextConfig;
