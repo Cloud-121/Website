@@ -40,6 +40,12 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "heltec.org" },
     ],
   },
+  async redirects() {
+    return [
+      { source: "/reports", destination: "/mesh-monitor#reports", permanent: false },
+      { source: "/duplicates", destination: "/mesh-monitor#duplicates", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {

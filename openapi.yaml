@@ -1,0 +1,543 @@
+openapi: 3.0.3
+info:
+  title: Gulf Coast Mesh Monitor API
+  description: |
+    Public REST API for prefix reservation, network reports, and duplicate detection.
+    Admin routes require X-API-Key when api_key is configured in config.ini.
+  version: 1.0.0
+  contact:
+    name: Gulf Coast Mesh Community
+
+servers:
+  - url: https://meshbuddy.gulfcoastmesh.org
+    description: Production (Gulf Coast Mesh Monitor)
+  - url: http://127.0.0.1:5000
+    description: Local API (api_port from config.ini)
+
+tags:
+  - name: Public
+    description: No API key required
+  - name: Admin
+    description: Requires X-API-Key when configured
+
+paths:
+  /api:
+    get:
+      tags: [Public]
+      summary: API discovery
+      operationId: apiIndex
+      responses:
+        "200":
+          description: Discovery document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiIndex"
+
+  /api/status:
+    get:
+      tags: [Public]
+      summary: Service status and configuration
+      operationId: apiStatus
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+
+  /api/prefix/{prefix}:
+    get:
+      tags: [Public]
+      summary: Check prefix availability
+      operationId: prefixAvailability
+      parameters:
+        - name: prefix
+          in: path
+          required: true
+          schema:
+            type: string
+            example: A1B2
+      responses:
+        "200":
+          description: Availability result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrefixAvailability"
+
+  /api/reserve:
+    post:
+      tags: [Public]
+      summary: Reserve a repeater prefix
+      operationId: createReservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReserveRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReserveResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/release:
+    post:
+      tags: [Public]
+      summary: Release a reservation (email required)
+      operationId: releaseReservationPublic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReleaseRequest"
+      responses:
+        "200":
+          description: Released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReleaseResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/reports:
+    get:
+      tags: [Public]
+      summary: Network health reports
+      operationId: networkReports
+      responses:
+        "200":
+          description: Full network report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkReport"
+
+  /api/duplicates:
+    get:
+      tags: [Public]
+      summary: Duplicate repeater prefixes
+      operationId: listDuplicates
+      responses:
+        "200":
+          description: Duplicate groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DuplicatesResponse"
+
+  /api/open:
+    get:
+      tags: [Public]
+      summary: Sample of open prefixes (appendix)
+      operationId: listOpenPrefixes
+      responses:
+        "200":
+          description: Open prefix sample
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenPrefixesResponse"
+
+  /api/reservations:
+    get:
+      tags: [Admin]
+      summary: List all reservations (admin)
+      operationId: listReservations
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Reservation list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/used:
+    get:
+      tags: [Admin]
+      summary: List deployed/off-reserved entries (admin)
+      operationId: listUsed
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Used list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsedResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/release/{prefix}:
+    delete:
+      tags: [Admin]
+      summary: Force-release a reservation (admin)
+      operationId: releaseReservationAdmin
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: prefix
+          in: path
+          required: true
+          schema:
+            type: string
+            example: A1B2
+      responses:
+        "200":
+          description: Released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReleaseResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    ApiIndex:
+      type: object
+      properties:
+        name:
+          type: string
+        documentation:
+          type: string
+        prefix_length:
+          type: integer
+        authentication:
+          type: object
+        public_routes:
+          type: array
+          items:
+            type: object
+        admin_routes:
+          type: array
+          items:
+            type: object
+
+    Status:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+        prefix_length:
+          type: integer
+        mesh_map_url:
+          type: string
+        website_url:
+          type: string
+          nullable: true
+        reports:
+          type: object
+          properties:
+            active_days:
+              type: integer
+
+    PrefixAvailability:
+      type: object
+      properties:
+        prefix:
+          type: string
+        available:
+          type: boolean
+        reason:
+          type: string
+          enum: [available, reserved, deployed, unusable, invalid]
+        message:
+          type: string
+
+    ReserveRequest:
+      type: object
+      required: [prefix, name, lat, lon, altitude, email]
+      properties:
+        prefix:
+          type: string
+          example: A1B2
+        name:
+          type: string
+        lat:
+          type: number
+          format: double
+        lon:
+          type: number
+          format: double
+        altitude:
+          type: number
+          format: double
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        display_name:
+          type: string
+        user_id:
+          type: integer
+        source:
+          type: string
+
+    Reservation:
+      type: object
+      properties:
+        prefix:
+          type: string
+        name:
+          type: string
+        lat:
+          type: number
+        lon:
+          type: number
+        altitude:
+          type: number
+        email:
+          type: string
+        username:
+          type: string
+        display_name:
+          type: string
+        user_id:
+          type: integer
+        added_at:
+          type: string
+        source:
+          type: string
+
+    ReserveResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        reservation:
+          $ref: "#/components/schemas/Reservation"
+
+    ReleaseRequest:
+      type: object
+      required: [prefix, email]
+      properties:
+        prefix:
+          type: string
+        email:
+          type: string
+
+    ReleaseResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        prefix:
+          type: string
+
+    ReportRepeaterRow:
+      type: object
+      properties:
+        name:
+          type: string
+        prefix:
+          type: string
+        public_key:
+          type: string
+        first_seen:
+          type: string
+        last_seen:
+          type: string
+        location:
+          type: object
+          properties:
+            text:
+              type: string
+            map_url:
+              type: string
+              nullable: true
+        owner:
+          type: string
+          nullable: true
+        advert_count:
+          type: integer
+        clock_skew_seconds:
+          type: integer
+          nullable: true
+        clock_sync:
+          type: string
+          nullable: true
+        clock_sync_label:
+          type: string
+        region:
+          type: string
+
+    NetworkReport:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        config:
+          type: object
+          properties:
+            active_days:
+              type: integer
+            prefix_length:
+              type: integer
+        summary:
+          type: object
+          properties:
+            total_nodes:
+              type: integer
+            repeaters:
+              type: integer
+            companions:
+              type: integer
+            needs_attention:
+              type: integer
+            recently_active:
+              type: integer
+        no_location:
+          type: object
+          properties:
+            count:
+              type: integer
+            repeaters:
+              type: array
+              items:
+                $ref: "#/components/schemas/ReportRepeaterRow"
+        clock_sync:
+          type: object
+          properties:
+            source:
+              type: string
+            fetched:
+              type: integer
+            missing:
+              type: integer
+            ok:
+              type: integer
+            minor:
+              type: integer
+            out_of_sync:
+              type: integer
+            unknown:
+              type: integer
+            repeaters:
+              type: array
+              items:
+                $ref: "#/components/schemas/ReportRepeaterRow"
+
+    DuplicatesResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        count:
+          type: integer
+        duplicates:
+          type: array
+          items:
+            type: object
+            properties:
+              prefix:
+                type: string
+              count:
+                type: integer
+              nodes:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+
+    OpenPrefixesResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        count:
+          type: integer
+        open:
+          type: array
+          items:
+            type: string
+
+    ReservationsResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        count:
+          type: integer
+        reservations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reservation"
+
+    UsedResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        count:
+          type: integer
+        used:
+          type: array
+          items:
+            type: object
+            additionalProperties: true

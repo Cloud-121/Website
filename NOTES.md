@@ -62,8 +62,16 @@ Defined in `tailwind.config.ts` + `app/globals.css`.
 | `/meshmap`      | Two embedded live views (Meshcore Analyzer, Meshtastic Meshview) + MQTT setup |
 | `/links`        | Curated docs/community/upstream resources                 |
 | `/emailsignup`  | Newsletter signup (Listmonk-backed)                       |
+| `/mesh-monitor` | Reserve prefix, duplicate detection, network reports (sections) |
 
 `app/icon.svg` ships as the favicon.
+
+## Mesh Monitor API
+
+`lib/mesh-monitor.ts` fetches public routes from
+[meshbuddy.gulfcoastmesh.org](https://meshbuddy.gulfcoastmesh.org) (`/api/reports`,
+`/api/duplicates`, `/api/status`). Contract lives in `API.md` + `openapi.yaml`.
+Override base URL locally with `MESH_MONITOR_API_BASE` (defaults to production).
 
 ## Live data
 

@@ -33,6 +33,7 @@ app/
   meshmap/page.tsx      Live maps (Meshcore Analyzer + Meshtastic Meshview) and MQTT instructions
   links/page.tsx        Curated guides, community, and upstream resources
   emailsignup/page.tsx  Newsletter signup (Listmonk-backed)
+  mesh-monitor/page.tsx Mesh monitoring: reserve, duplicates, network reports
   globals.css           Design tokens, surface/utility classes
   icon.svg              Browser tab icon
 components/
@@ -44,6 +45,8 @@ components/
 lib/
   theme.ts              useTheme hook with localStorage persistence
   mesh-stats.ts         Server-only Explorer API fetcher (ISR, 5 min)
+  mesh-monitor.ts       Server-only Mesh Monitor API fetcher (ISR, 5 min)
+  meetings.ts           Server-only published meetings API fetcher
 tailwind.config.ts      Design tokens (gulf, sand, ink palettes; display sizes)
 eslint.config.mjs       Flat ESLint config wrapping next/core-web-vitals + next/typescript
 ```
@@ -62,3 +65,4 @@ eslint.config.mjs       Flat ESLint config wrapping next/core-web-vitals + next/
 - **Supporters / partners** — `components/site-footer.tsx`.
 - **Hero copy, stats, regions, how-it-works** — `app/page.tsx`. Regions support a `forceLive: true` flag to show as live even when the upstream API count is zero (currently used for Mississippi).
 - **GitHub org link** — `components/site-header.tsx` and `components/site-footer.tsx` both point at [`github.com/GulfCoastMesh`](https://github.com/GulfCoastMesh).
+- **Mesh Monitor API** — [`API.md`](./API.md) and [`openapi.yaml`](./openapi.yaml) document the API. `/mesh-monitor` hosts reserve, duplicates, and network reports (proxied via `app/api/mesh-monitor/*` and `lib/mesh-monitor.ts`).

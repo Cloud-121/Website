@@ -96,6 +96,15 @@ const guides: Resource[] = [
     tag: "Guide",
     accent: "from-fuchsia-400/25 to-gulf-500/10",
   },
+  {
+    title: "Mesh monitoring & reserve",
+    description: "Reserve a repeater prefix, check duplicates, and view network health reports.",
+    href: "/mesh-monitor",
+    internal: true,
+    icon: Radio,
+    tag: "Operator",
+    accent: "from-gulf-400/25 to-sand-500/10",
+  },
 ];
 
 const deepDives: Resource[] = [
