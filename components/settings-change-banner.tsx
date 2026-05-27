@@ -13,7 +13,7 @@ export function SettingsChangeBanner() {
       >
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-sand-700 sm:mt-0 dark:text-sand-300" aria-hidden />
         <p>
-          Our MeshCore settings are changing to defaults on May 25. Please update your nodes and repeater
+          Our MeshCore settings have changed to defaults on May 25. Please update your nodes and repeater
           settings.{" "}
           <Link
             href={SETTINGS_DOCS_HREF}
