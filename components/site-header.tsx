@@ -13,7 +13,6 @@ const nav: readonly NavItem[] = [
   { label: "Meetings", href: "/meetings" },
   { label: "Setup", href: "/setup" },
   { label: "Mesh monitoring", href: "/mesh-monitor" },
-  { label: "Resources", href: "/links" },
   { label: "Newsletter", href: "/emailsignup" },
   { label: "Docs", href: "/docs" },
 ];

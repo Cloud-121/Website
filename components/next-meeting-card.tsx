@@ -3,25 +3,24 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, CalendarClock } from "lucide-react";
 import { useHasMounted } from "@/lib/use-has-mounted";
+import {
+  MEETING_END,
+  MEETING_START,
+  MEETING_TIME_LABEL,
+  MEETING_TZ,
+} from "@/lib/meeting-schedule";
 
 /**
  * "Next meeting" hero card for /meetings.
  *
- * Source of truth: the community meeting runs every Monday from 7:30 PM to
- * 10:00 PM America/New_York (Eastern). This card translates the next
- * occurrence into the visitor's local clock so a member on the Gulf Coast
- * sees their own time, not someone else's.
+ * Source of truth: the community meeting runs every Monday from 6:30 PM to
+ * 9:00 PM America/Chicago (Central), the same instant as the former
+ * 7:30–10:00 PM Eastern schedule.
  *
  * SSR-safe: while hydrating, the wrapper renders a static placeholder. Only
  * after mount does it swap to the localized "in X hours" string, which keeps
  * the server-rendered HTML stable across timezones.
  */
-
-const MEETING_TZ = "America/New_York";
-const MEETING_HOUR = 19;
-const MEETING_MINUTE = 30;
-const MEETING_END_HOUR = 22;
-const MEETING_END_MINUTE = 0;
 
 function tzWallToUtc(
   year: number,
@@ -31,13 +30,6 @@ function tzWallToUtc(
   minute: number,
   timeZone: string,
 ): Date {
-  // Convert a (year, month, day, hour, minute) tuple interpreted in `timeZone`
-  // into the corresponding UTC instant. Works around the lack of a native
-  // `Date.fromZoned` by using the "guess and correct" trick:
-  //   1. Treat the wall-time as if it were UTC ("guess").
-  //   2. Ask Intl what that guessed instant *displays as* in the target zone.
-  //   3. The delta between the wall-time and what the zone displays is the
-  //      offset we need to subtract to get the true UTC instant.
   const guessMs = Date.UTC(year, month - 1, day, hour, minute);
   const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -60,7 +52,7 @@ function tzWallToUtc(
   return new Date(guessMs + (guessMs - zonedMs));
 }
 
-type EtCalendar = {
+type CstCalendar = {
   year: number;
   month: number;
   day: number;
@@ -69,7 +61,7 @@ type EtCalendar = {
   weekday: number;
 };
 
-function nowInEt(now: Date): EtCalendar {
+function nowInCst(now: Date): CstCalendar {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: MEETING_TZ,
     year: "numeric",
@@ -107,25 +99,29 @@ type NextMeeting = {
 };
 
 function computeNextMeeting(now: Date): NextMeeting {
-  const et = nowInEt(now);
-  let daysToAdd = (1 - et.weekday + 7) % 7;
+  const cst = nowInCst(now);
+  let daysToAdd = (1 - cst.weekday + 7) % 7;
   if (daysToAdd === 0) {
-    const minutesNow = et.hour * 60 + et.minute;
-    const endMinutes = MEETING_END_HOUR * 60 + MEETING_END_MINUTE;
+    const minutesNow = cst.hour * 60 + cst.minute;
+    const endMinutes = MEETING_END.hour * 60 + MEETING_END.minute;
     if (minutesNow >= endMinutes) {
-      // It's Monday in ET but the meeting has already ended. Skip ahead a week.
       daysToAdd = 7;
     }
   }
-  // Adding to `day` lets the Date constructor normalize end-of-month rollovers
-  // for us, so we don't have to special-case Jan 31 + 1 = Feb 1, etc.
-  const targetUtc = new Date(Date.UTC(et.year, et.month - 1, et.day + daysToAdd));
+  const targetUtc = new Date(Date.UTC(cst.year, cst.month - 1, cst.day + daysToAdd));
   const ty = targetUtc.getUTCFullYear();
   const tm = targetUtc.getUTCMonth() + 1;
   const td = targetUtc.getUTCDate();
 
-  const start = tzWallToUtc(ty, tm, td, MEETING_HOUR, MEETING_MINUTE, MEETING_TZ);
-  const end = tzWallToUtc(ty, tm, td, MEETING_END_HOUR, MEETING_END_MINUTE, MEETING_TZ);
+  const start = tzWallToUtc(
+    ty,
+    tm,
+    td,
+    MEETING_START.hour,
+    MEETING_START.minute,
+    MEETING_TZ,
+  );
+  const end = tzWallToUtc(ty, tm, td, MEETING_END.hour, MEETING_END.minute, MEETING_TZ);
   return {
     start,
     end,
@@ -133,8 +129,9 @@ function computeNextMeeting(now: Date): NextMeeting {
   };
 }
 
-function formatLocal(start: Date): string {
-  return start.toLocaleString(undefined, {
+function formatInCst(start: Date): string {
+  return start.toLocaleString("en-US", {
+    timeZone: MEETING_TZ,
     weekday: "long",
     month: "short",
     day: "numeric",
@@ -190,7 +187,7 @@ function Shell({
             >
               <span className="font-medium">{countdown}</span>
               <span className="mx-1.5 text-ink-400">·</span>
-              7:30 - 10:00 PM ET every Monday
+              {MEETING_TIME_LABEL} every Monday
             </p>
           </div>
         </div>
@@ -211,9 +208,6 @@ function Shell({
 }
 
 function MountedNextMeetingCard() {
-  // Re-render every 60s so the "in X hours" countdown stays current. Setting
-  // state inside the interval callback is allowed by React 19's
-  // set-state-in-effect lint (it's a subscription, not an effect-body call).
   const [now, setNow] = useState<Date>(() => new Date());
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 60_000);
@@ -224,7 +218,7 @@ function MountedNextMeetingCard() {
   return (
     <Shell
       eyebrow={next.inProgress ? "Meeting in progress" : "Next meeting"}
-      localized={formatLocal(next.start)}
+      localized={formatInCst(next.start)}
       countdown={formatCountdown(next.start, now)}
     />
   );
@@ -236,7 +230,7 @@ export function NextMeetingCard() {
     return (
       <Shell
         eyebrow="Next meeting"
-        localized="Monday · 7:30 PM ET"
+        localized="Monday · 6:30 PM CST"
         countdown="every week"
       />
     );

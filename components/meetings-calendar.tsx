@@ -3,18 +3,14 @@
 import { useMemo, useState } from "react";
 import { ArrowUpRight, ChevronLeft, ChevronRight, Youtube } from "lucide-react";
 import { useHasMounted } from "@/lib/use-has-mounted";
+import { MEETING_TIME_LABEL, MEETING_TZ } from "@/lib/meeting-schedule";
 
 /**
  * Month-grid calendar for /meetings.
  *
- * The grid is rendered in ET because the underlying schedule is ET-anchored
- * (every Monday 7:30 - 10:00 PM ET). That keeps "which Monday is which"
- * unambiguous regardless of where the visitor sits. Past Mondays for which
- * the public API returned a published recap get a YouTube link inline.
- *
- * SSR-safe: the outer wrapper renders a stable skeleton while hydrating. Only
- * after mount does the inner component subscribe to the visitor's clock, so
- * the server and the first client render emit identical markup.
+ * The grid is rendered in CST because the underlying schedule is CST-anchored
+ * (every Monday 6:30 - 9:00 PM CST). That keeps "which Monday is which"
+ * unambiguous regardless of where the visitor sits.
  */
 
 type CalendarMeeting = {
@@ -27,7 +23,6 @@ type Props = {
   publishedByDateKey: Record<string, CalendarMeeting>;
 };
 
-const MEETING_TZ = "America/New_York";
 const MONTH_NAMES = [
   "January",
   "February",
@@ -44,7 +39,7 @@ const MONTH_NAMES = [
 ];
 const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function nowInEt(now: Date) {
+function nowInCst(now: Date) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: MEETING_TZ,
     year: "numeric",
@@ -78,9 +73,6 @@ type Cell = {
 };
 
 function buildMonthCells(year: number, month: number): Cell[] {
-  // Anchor on UTC midnight so `getUTCDay()` is consistent regardless of where
-  // this code runs. This is purely a calendar-math helper; we treat the
-  // (year, month, day) tuple as the ET wall date with no timezone ambiguity.
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
   const firstWeekday = firstOfMonth.getUTCDay();
   const startDay = 1 - firstWeekday;
@@ -118,16 +110,13 @@ export function MeetingsCalendar({ publishedByDateKey }: Props) {
 }
 
 function MountedCalendar({ publishedByDateKey }: Props) {
-  // Initial view is the current ET month, captured once on mount. This
-  // initializer only runs after hydration (because the parent gates rendering
-  // on `useHasMounted`), so reading the visitor's clock is safe here.
   const [view, setView] = useState<{ year: number; month: number }>(() => {
-    const et = nowInEt(new Date());
-    return { year: et.year, month: et.month };
+    const cst = nowInCst(new Date());
+    return { year: cst.year, month: cst.month };
   });
   const todayKey = useMemo(() => {
-    const et = nowInEt(new Date());
-    return keyOf(et.year, et.month, et.day);
+    const cst = nowInCst(new Date());
+    return keyOf(cst.year, cst.month, cst.day);
   }, []);
 
   const cells = useMemo(() => buildMonthCells(view.year, view.month), [view]);
@@ -145,8 +134,8 @@ function MountedCalendar({ publishedByDateKey }: Props) {
       return { year: v.year, month: m };
     });
   const goToday = () => {
-    const et = nowInEt(new Date());
-    setView({ year: et.year, month: et.month });
+    const cst = nowInCst(new Date());
+    setView({ year: cst.year, month: cst.month });
   };
 
   return (
@@ -154,7 +143,7 @@ function MountedCalendar({ publishedByDateKey }: Props) {
       <header className="flex items-center justify-between gap-3 px-1 pb-4">
         <div>
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-gulf-700 dark:text-gulf-300">
-            Schedule (ET)
+            Schedule (CST)
           </p>
           <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink-900 dark:text-white">
             {MONTH_NAMES[view.month - 1]} {view.year}
@@ -208,7 +197,7 @@ function MountedCalendar({ publishedByDateKey }: Props) {
       </div>
 
       <p className="mt-4 px-1 text-xs text-ink-500 dark:text-ink-400">
-        Mondays are meeting nights — 7:30 - 10:00 PM ET. Past Mondays link to the YouTube recap when published.
+        Mondays are meeting nights — {MEETING_TIME_LABEL}. Past Mondays link to the YouTube recap when published.
       </p>
     </section>
   );
@@ -253,7 +242,7 @@ function CalendarCell({
       {isMonday ? (
         <div className="mt-auto flex flex-col gap-0.5">
           <span className="hidden font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-gulf-700 sm:inline dark:text-gulf-300">
-            7:30 PM ET
+            6:30 PM CST
           </span>
           {published ? (
             <span className="inline-flex items-center gap-1 self-start rounded-full bg-sand-400/20 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-sand-700 dark:text-sand-300">

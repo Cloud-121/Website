@@ -42,6 +42,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      { source: "/links", destination: "/docs", permanent: true },
       { source: "/reports", destination: "/mesh-monitor#reports", permanent: false },
       { source: "/duplicates", destination: "/mesh-monitor#duplicates", permanent: false },
     ];

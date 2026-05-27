@@ -17,6 +17,7 @@ import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
+import { MEETING_TZ } from "./meeting-schedule";
 
 export const MEETING_API_BASE = "https://meeting.gulfcoastmesh.org";
 const REVALIDATE_SECONDS = 300;
@@ -145,31 +146,30 @@ export function absoluteAgendaUrl(downloadUrl: string): string {
 }
 
 /**
- * Format an ISO timestamp into a YYYY-MM-DD key in America/New_York.
+ * Format an ISO timestamp into a YYYY-MM-DD key in America/Chicago.
  *
- * The meetings nominally run 7:30 - 10:00 PM ET on a Monday, which means a
- * meeting that starts on Monday in ET will sometimes already be Tuesday in
- * UTC. Bucketing by the ET calendar day keeps everything aligned with the
- * Monday cell in the calendar regardless of the visitor's timezone.
+ * The meetings nominally run 6:30 - 9:00 PM CST on a Monday. Bucketing by
+ * the CST calendar day keeps everything aligned with the Monday cell in the
+ * calendar regardless of the visitor's timezone.
  */
-export function meetingDateKeyEt(iso: string): string {
+export function meetingDateKeyCst(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   // en-CA gives ISO-shaped YYYY-MM-DD output via Intl.
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York",
+    timeZone: MEETING_TZ,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(d);
 }
 
-/** Format an ISO timestamp as a short time string in ET (e.g. "7:31 PM"). */
-export function formatTimeEt(iso: string): string {
+/** Format an ISO timestamp as a short time string in CST (e.g. "6:31 PM"). */
+export function formatTimeCst(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
+    timeZone: MEETING_TZ,
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
