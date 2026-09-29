@@ -12,7 +12,7 @@ type NavItem = { label: string; href: string; external?: boolean };
 const nav: readonly NavItem[] = [
   { label: "Maps", href: "/meshmap" },
   { label: "Setup", href: "/setup" },
-  { label: "Docs", href: "/docs" },
+  { label: "Docs", href: "https://docs.gulfcoastmesh.org" },
   { label: "Monitoring", href: "/mesh-monitor" },
   { label: "Meetings", href: "/meetings" },
   { label: "Newsletter", href: "/emailsignup" },
