@@ -8,7 +8,7 @@ const supporters = ["ma7", "n5msy", "talwah", "simon", "kyra", "terry", "mike", 
 const explore: Array<{ label: string; href: string; external?: boolean }> = [
   { label: "Live maps", href: "/meshmap" },
   { label: "Setup wizard", href: "/setup" },
-  { label: "Documentation", href: "/docs" },
+  { label: "Documentation", href: "https://docs.gulfcoastmesh.org" },
   { label: "Mesh monitoring", href: "/mesh-monitor" },
   { label: "Meetings", href: "/meetings" },
   { label: "Newsletter", href: "/emailsignup" },
@@ -19,7 +19,7 @@ const community: Array<{ label: string; href: string; external?: boolean }> = [
   { label: "Facebook group", href: "https://www.facebook.com/groups/gulfcoastmesh", external: true },
   { label: "GitHub", href: "https://github.com/GulfCoastMesh", external: true },
   { label: "MkDocs site", href: "https://docs.gulfcoastmesh.org", external: true },
-  { label: "Transparency", href: "/docs/transparency" },
+  { label: "Transparency", href: "https://docs.gulfcoastmesh.org/transparency" },
   { label: "Privacy policy", href: "/privacy" },
 ];
 

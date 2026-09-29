@@ -64,7 +64,7 @@ export default async function DocsSlugPage({
       >
         {prev ? (
           <Link
-            href={prev.slug === "index" ? "/docs" : `/docs/${prev.slug}`}
+            href={prev.slug === "index" ? "https://docs.gulfcoastmesh.org" : `https://docs.gulfcoastmesh.org/${prev.slug}`}
             className="group flex flex-col rounded-lg border bg-[rgb(var(--bg-elevated))] px-5 py-4 transition hover:bg-[rgb(var(--bg-sunken))]"
             style={{ borderColor: "rgb(var(--line))" }}
           >
@@ -81,7 +81,7 @@ export default async function DocsSlugPage({
         )}
         {next ? (
           <Link
-            href={`/docs/${next.slug}`}
+            href={`https://docs.gulfcoastmesh.org/${next.slug}`}
             className="group flex flex-col rounded-lg border bg-[rgb(var(--bg-elevated))] px-5 py-4 text-right transition hover:bg-[rgb(var(--bg-sunken))] sm:items-end"
             style={{ borderColor: "rgb(var(--line))" }}
           >
@@ -97,7 +97,7 @@ export default async function DocsSlugPage({
       </nav>
 
       <p className="mt-12 text-sm text-ink-500 dark:text-ink-400">
-        <Link href="/docs" className="font-medium text-gulf-700 hover:underline dark:text-gulf-300">
+        <Link href="https://docs.gulfcoastmesh.org" className="font-medium text-gulf-700 hover:underline dark:text-gulf-300">
           ← All docs
         </Link>
       </p>

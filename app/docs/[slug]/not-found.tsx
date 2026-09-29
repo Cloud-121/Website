@@ -18,7 +18,7 @@ export default function DocsSlugNotFound() {
       </header>
 
       <div className="flex flex-wrap gap-3">
-        <Link href="/docs" className="btn-primary">
+        <Link href="https://docs.gulfcoastmesh.org" className="btn-primary">
           Browse all docs
         </Link>
         <a

@@ -137,7 +137,7 @@ export default function MeshmapPage() {
           </a>{" "}
           or browse{" "}
           <Link
-            href="/docs"
+            href="https://docs.gulfcoastmesh.org"
             className="font-semibold text-gulf-700 underline-offset-4 hover:underline dark:text-gulf-300"
           >
             the docs

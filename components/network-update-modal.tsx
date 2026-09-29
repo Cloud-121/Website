@@ -8,7 +8,7 @@ import { AlertTriangle, ArrowRight, X } from "lucide-react";
 // users see the new notice. Keeping a structured key (`scope:topic:version`)
 // makes that bookkeeping obvious.
 const STORAGE_KEY = "gcm:network-update:sf7-may25-v2:dismissed";
-const DOCS_HREF = "/docs/freq-settings";
+const DOCS_HREF = "https://docs.gulfcoastmesh.org/freq-settings";
 const DISCORD_HREF = "https://discord.gulfcoastmesh.org";
 
 const listeners = new Set<() => void>();

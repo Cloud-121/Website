@@ -49,8 +49,8 @@ const DOCS_REPO_RAW =
 
 // rehype plugin: rewrite relative image refs (e.g. `img/foo.png` or
 // `./img/foo.png`) to absolute raw.githubusercontent URLs in the docs repo,
-// and rewrite relative `.md` links (`foo.md`, `bar.md#section`) to internal
-// `/docs/foo` routes. External (http/https) URLs are left alone.
+// and rewrite relative `.md` links (`foo.md`, `bar.md#section`) to
+// `https://docs.gulfcoastmesh.org/foo` pages. External (http/https) URLs are left alone.
 function rewriteAssets() {
   return (tree: Root) => {
     visit(tree, "element", (node: Element) => {
@@ -75,10 +75,10 @@ function rewriteAssets() {
           if (mdMatch) {
             const targetSlug = mdMatch[1];
             const hash = mdMatch[2] ?? "";
-            const internalPath = targetSlug === "index" ? "/docs" : `/docs/${targetSlug}`;
+            const docsUrl = targetSlug === "index" ? "https://docs.gulfcoastmesh.org" : `https://docs.gulfcoastmesh.org/${targetSlug}`;
             node.properties = {
               ...(node.properties ?? {}),
-              href: `${internalPath}${hash}`,
+              href: `${docsUrl}${hash}`,
             };
           } else if (cleaned.startsWith("img/")) {
             node.properties = {

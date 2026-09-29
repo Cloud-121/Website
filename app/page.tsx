@@ -60,7 +60,7 @@ const hardwareTiers = [
     title: "Rooftop Repeater",
     description:
       "A weather-resistant solar node installed on a roof, mast, or chimney to extend coverage and bridge your neighborhood to the wider net.",
-    href: "/docs/meshcore-repeater-setup",
+    href: "https://docs.gulfcoastmesh.org/meshcore-repeater-setup",
     cta: "Repeater build guide",
     icon: Router,
   },
@@ -68,7 +68,7 @@ const hardwareTiers = [
     title: "Base Station",
     description:
       "A permanent station or server for your home or workshop, providing continuous monitoring and regional emergency bulletin broadcasts.",
-    href: "/docs/devicerecs",
+    href: "https://docs.gulfcoastmesh.org/devicerecs",
     cta: "Device recommendations",
     icon: ShieldCheck,
   },

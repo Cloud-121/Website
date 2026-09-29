@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 
-const SETTINGS_DOCS_HREF = "/docs/freq-settings";
+const SETTINGS_DOCS_HREF = "https://docs.gulfcoastmesh.org/freq-settings";
 
 export function SettingsChangeBanner() {
   return (

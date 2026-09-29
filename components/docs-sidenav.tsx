@@ -83,7 +83,7 @@ function NavList({
       <ul className="space-y-1">
         <li>
           <NavLink
-            href="/docs"
+            href="https://docs.gulfcoastmesh.org"
             label={home.title}
             icon={<Home className="h-3.5 w-3.5" aria-hidden />}
             active={isActive(pathname, "index")}
@@ -101,7 +101,7 @@ function NavList({
             {section.pages.map((page) => (
               <li key={page.slug}>
                 <NavLink
-                  href={`/docs/${page.slug}`}
+                  href={`https://docs.gulfcoastmesh.org/${page.slug}`}
                   label={page.title}
                   active={isActive(pathname, page.slug)}
                   onClick={onNavigate}

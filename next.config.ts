@@ -42,7 +42,10 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: "/links", destination: "/docs", permanent: true },
+      { source: "/links", destination: "https://docs.gulfcoastmesh.org", permanent: true },
+      { source: "/docs", destination: "https://docs.gulfcoastmesh.org", permanent: true },
+      { source: "/docs/index", destination: "https://docs.gulfcoastmesh.org", permanent: true },
+      { source: "/docs/:path+", destination: "https://docs.gulfcoastmesh.org/:path+", permanent: true },
       { source: "/reports", destination: "/mesh-monitor#reports", permanent: false },
       { source: "/duplicates", destination: "/mesh-monitor#duplicates", permanent: false },
     ];
